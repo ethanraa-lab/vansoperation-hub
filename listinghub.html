@@ -127,11 +127,24 @@ main{width:100%;max-width:1440px;margin:0 auto}
 
 #s3 .stat{font:inherit;text-align:left;color:var(--text);cursor:pointer;position:relative;padding-right:29px;transition:border-color .18s,background .18s,transform .18s}
 #s3 .stat::after{content:"↗";position:absolute;right:12px;top:12px;color:var(--accent)}
-#s3 .stat:hover{background:#f6f7ff;border-color:var(--accent);transform:translateY(-2px)}
+#s3 .stat{overflow:hidden}
+#s3 .stat:hover{background:#f6f7ff;border-color:var(--accent);transform:translateY(-3px);box-shadow:0 9px 20px -15px #3d5afe}
+#s3 .stat::after{transition:transform .2s ease}
+#s3 .stat:hover::after{transform:translate(2px,-2px)}
+.detail-ripple{position:absolute;width:150%;aspect-ratio:1;border-radius:50%;background:#3d5afe38;pointer-events:none;animation:detail-ripple .48s ease-out both}
+@keyframes detail-ripple{from{transform:translate(-50%,-50%) scale(0);opacity:1}to{transform:translate(-50%,-50%) scale(1);opacity:0}}
 .detail-dialog{width:min(720px,calc(100% - 28px));max-height:85vh;max-height:85dvh;padding:0;border:1px solid var(--line);border-radius:18px;color:var(--text);background:var(--card);box-shadow:0 24px 80px #090e324d}
-.detail-dialog[open]{display:flex;flex-direction:column;animation:detail-in .22s cubic-bezier(.2,.75,.2,1) both}
+.detail-dialog[open]{display:flex;flex-direction:column;animation:detail-in .43s cubic-bezier(.2,.72,.28,1) both}
 .detail-dialog::backdrop{background:#0b102b77;animation:detail-fade .22s ease both}
-@keyframes detail-in{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes detail-in{
+  0%{opacity:0;transform:translateY(28px) scale(.92)}
+  65%{opacity:1;transform:translateY(-4px) scale(1.018)}
+  100%{opacity:1;transform:none}
+}
+.detail-dialog[open] .detail-scroll tbody tr:nth-child(-n+6){animation:detail-row .27s ease-out both;animation-delay:calc(.13s + var(--row-step,0) * .032s)}
+@keyframes detail-row{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+#detail-copy.copied{background:var(--ok);animation:detail-copied .42s ease-out}
+@keyframes detail-copied{0%,100%{transform:scale(1)}40%{transform:scale(1.12)}72%{transform:scale(.98)}}
 @keyframes detail-fade{from{opacity:0}to{opacity:1}}
 .detail-head,.detail-foot{padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex:none}
 .detail-head{border-bottom:1px solid var(--line)}
@@ -144,7 +157,11 @@ main{width:100%;max-width:1440px;margin:0 auto}
 .detail-empty{margin:16px}
 .detail-close{min-width:32px}
 body:has(.detail-dialog[open]){overflow:hidden}
-@media(prefers-reduced-motion:reduce){.detail-dialog[open],.detail-dialog::backdrop{animation:none}#s3 .stat{transition:none}}
+@media(prefers-reduced-motion:reduce){
+  .detail-dialog[open],.detail-dialog::backdrop,.detail-dialog[open] .detail-scroll tbody tr:nth-child(-n+6),#detail-copy.copied{animation:none}
+  #s3 .stat,#s3 .stat::after{transition:none}
+  #s3 .stat:hover,#s3 .stat:hover::after{transform:none}
+}
 </style>
 </head>
 <body data-page="hub">
@@ -384,6 +401,18 @@ document.querySelectorAll("#s3 [data-detail]").forEach(button => {
   button.onclick = () => {
     const detail = summaryDetails[button.dataset.detail];
     selectedDetail = detail;
+    $("detail-copy").classList.remove("copied");
+    $("detail-copy").textContent = "Copy all rows";
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      button.querySelector(".detail-ripple")?.remove();
+      const ripple = document.createElement("span");
+      ripple.className = "detail-ripple";
+      ripple.setAttribute("aria-hidden", "true");
+      ripple.style.left = "50%";
+      ripple.style.top = "50%";
+      ripple.addEventListener("animationend", () => ripple.remove(), {once: true});
+      button.append(ripple);
+    }
     $("detail-title").textContent = detail.title;
     $("detail-count").textContent = `${detail.rows.length.toLocaleString()} records`;
     $("detail-status").textContent = "";
@@ -391,12 +420,18 @@ document.querySelectorAll("#s3 [data-detail]").forEach(button => {
     $("detail-table").hidden = !detail.rows.length;
     $("detail-copy").disabled = !detail.rows.length;
     $("detail-table").innerHTML = "<thead><tr>" + detail.headers.map(h => `<th scope="col">${esc(h)}</th>`).join("") +
-      "</tr></thead><tbody>" + detail.rows.map(row => "<tr>" +
+      "</tr></thead><tbody>" + detail.rows.map((row, index) => (index < 6 ? `<tr style="--row-step:${index}">` : "<tr>") +
         row.map(value => `<td>${esc(value ?? "")}</td>`).join("") + "</tr>").join("") + "</tbody>";
     detailDialog.showModal();
     detailDialog.querySelector(".detail-scroll").scrollTop = 0;
   };
 });
+function showCopiedFeedback() {
+  const button = $("detail-copy");
+  button.classList.add("copied");
+  button.textContent = "✓ Copied";
+  $("detail-status").textContent = "Copied. Paste into Excel or a text editor.";
+}
 $("detail-copy").onclick = async () => {
   const detail = selectedDetail;
   const text = [detail.headers, ...detail.rows].map(row =>
@@ -404,7 +439,7 @@ $("detail-copy").onclick = async () => {
   try {
     if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
     await navigator.clipboard.writeText(text);
-    if (selectedDetail === detail && detailDialog.open) $("detail-status").textContent = "Copied. Paste into Excel or a text editor.";
+    if (selectedDetail === detail && detailDialog.open) showCopiedFeedback();
   } catch {
     if (selectedDetail !== detail || !detailDialog.open) return;
     detailDialog.querySelector("textarea")?.remove();
@@ -419,7 +454,7 @@ $("detail-copy").onclick = async () => {
     if (copied) {
       input.remove();
       $("detail-copy").focus();
-      $("detail-status").textContent = "Copied. Paste into Excel or a text editor.";
+      showCopiedFeedback();
     } else {
       $("detail-status").textContent = "Press Ctrl+C or Cmd+C to copy the selected rows.";
     }
