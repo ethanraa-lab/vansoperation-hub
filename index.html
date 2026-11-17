@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dotcom Operations Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+h2{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:34px 0 12px;display:flex;justify-content:space-between;align-items:center}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.kpi .ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+.kpi p{margin:0;color:var(--muted);font-weight:500}
+.kpi strong{display:block;font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi strong em{font-size:15px;font-style:normal;font-weight:600;color:var(--muted);margin-left:3px}
+.kpi small{color:var(--muted);font-size:12px}
+.hero{position:relative;overflow:hidden;background:var(--ink);color:#fff;border-radius:18px;padding:26px 28px;margin-top:14px;display:grid;grid-template-columns:1fr auto;gap:22px;align-items:end}
+.hero::after{content:"";position:absolute;right:0;top:0;width:340px;height:100%;opacity:.09;background:conic-gradient(#fff 25%,transparent 0 50%,#fff 0 75%,transparent 0) 0 0/36px 36px;-webkit-mask-image:linear-gradient(to left,#000,transparent);mask-image:linear-gradient(to left,#000,transparent);pointer-events:none}
+.hero>*{position:relative;z-index:1}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8E97AD;font-weight:600}
+.hero h3{margin:6px 0 2px;font-size:26px;font-weight:800;letter-spacing:-.025em}
+.hero p{margin:0;color:#A5ADC0}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);margin:18px 0 14px;overflow:hidden;max-width:560px}
+.bar i{display:block;height:100%;width:84%;border-radius:99px;background:var(--accent);animation:grow .9s cubic-bezier(.2,.8,.2,1) both}
+.steps{display:flex;gap:8px;flex-wrap:wrap}
+.step{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.16);color:#C5CAD6;display:inline-flex;gap:6px;align-items:center}
+.step.done{color:#fff;border-color:rgba(255,255,255,.28)}
+.step.now{background:#fff;color:var(--ink);border-color:#fff}
+.step svg{width:13px;height:13px}
+.btn.light{background:#fff;color:var(--ink)}
+.btn.light:hover{box-shadow:0 8px 24px -8px rgba(255,255,255,.5)}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.tool{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px;transition:transform .18s,box-shadow .18s,border-color .18s}
+.tool:hover{transform:translateY(-3px);border-color:#C9CFDB;box-shadow:0 14px 30px -18px rgba(16,20,31,.35)}
+.tool .ic{width:40px;height:40px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center;margin-bottom:10px}
+.tool b{font-size:16px;font-weight:700;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
+.tool b svg{color:var(--muted);transition:transform .18s,color .18s}
+.tool:hover b svg{transform:translateX(3px);color:var(--accent)}
+.tool p{margin:0;color:var(--muted)}
+.tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.tag{font:500 12px var(--mono);padding:2px 8px;border-radius:6px;background:#EEF0F5;color:#3B4458}
+.seg{display:inline-flex;background:#E7E9EF;border-radius:10px;padding:3px}
+.seg button{font:600 12px var(--sans);border:0;background:none;padding:5px 12px;border-radius:7px;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(16,20,31,.12)}
+.tw{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 18px;border-bottom:1px solid var(--line);background:#FAFBFC}
+td{padding:14px 18px;border-bottom:1px solid #EEF0F4}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#FAFBFD}
+.mono{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ok);background:var(--ok-bg);padding:3px 10px;border-radius:99px}
+.ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok)}
+@media (max-width:900px){.hero{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="dashboard">
+<aside id="side"></aside>
+<main>
+  <div class="top rise">
+    <div>
+      <h1>Dashboard</h1>
+      <div class="sub"><span class="pill">Demo data</span><span>Vans Malaysia and Singapore. New runs from the Listing Hub appear in Recent runs.</span></div>
+    </div>
+    <a class="btn" href="listinghub.html" data-link="hub"><svg class="i"><use href="#plus"/></svg>New listing batch</a>
+  </div>
+
+  <section class="kpis" aria-label="Summary">
+    <div class="kpi rise d1"><div class="ic"><svg class="i"><use href="#layers"/></svg></div><p>Active batches</p><strong>3</strong><small>2 Malaysia, 1 Singapore</small></div>
+    <div class="kpi rise d2"><div class="ic"><svg class="i"><use href="#image"/></svg></div><p>Waiting for images</p><strong>8</strong><small>All in November Drop</small></div>
+    <div class="kpi rise d3"><div class="ic"><svg class="i"><use href="#done"/></svg></div><p>Ready to export</p><strong>2</strong><small>Import files can be generated</small></div>
+    <div class="kpi rise d4"><div class="ic"><svg class="i"><use href="#clock"/></svg></div><p>Estimated time saved</p><strong>33<em>min</em></strong><small>Across this week's runs</small></div>
+  </section>
+
+  <section class="hero rise d4" aria-label="Continue batch">
+    <div>
+      <div class="eyebrow">Continue batch</div>
+      <h3>Vans Malaysia · November Drop</h3>
+      <p><span class="mono">42</span> of <span class="mono">50</span> items ready</p>
+      <div class="bar" role="progressbar" aria-valuenow="42" aria-valuemin="0" aria-valuemax="50" aria-label="Items ready"><i></i></div>
+      <div class="steps">
+        <span class="step done"><svg class="i"><use href="#check"/></svg>SAP data</span>
+        <span class="step done"><svg class="i"><use href="#check"/></svg>DAM data</span>
+        <span class="step now">Images</span>
+        <span class="step">Export</span>
+      </div>
+    </div>
+    <a class="btn light" href="soon.html?p=images" data-link="images">Find images for 8 items<svg class="i"><use href="#arrow"/></svg></a>
+  </section>
+
+  <h2>Tools</h2>
+  <section class="tools">
+    <a class="tool" href="listinghub.html" data-link="hub"><div class="ic"><svg class="i"><use href="#grid"/></svg></div><b>Vans Listing Hub<svg class="i"><use href="#arrow"/></svg></b><p>Merge SAP and DAM for Matrixify</p></a>
+    <a class="tool" href="soon.html?p=collections" data-link="collections"><div class="ic"><svg class="i"><use href="#sparkle"/></svg></div><b>Vans Smart Collection<svg class="i"><use href="#arrow"/></svg></b><p>Create collections with conditions set automatically</p></a>
+    <a class="tool" href="soon.html?p=images" data-link="images"><div class="ic"><svg class="i"><use href="#image"/></svg></div><b>Vans Image Workbench<svg class="i"><use href="#arrow"/></svg></b><p>Find and arrange product images</p></a>
+    <a class="tool" href="soon.html?p=sku" data-link="sku"><div class="ic"><svg class="i"><use href="#link"/></svg></div><b>Vans Shopify SKU Mapping<svg class="i"><use href="#arrow"/></svg></b><p>Map and sync with eRetail</p><div class="tags"><span class="tag">MY · M23</span><span class="tag">SG · M18</span></div></a>
+  </section>
+
+  <h2>Recent runs
+    <span class="seg" role="group" aria-label="Filter by market">
+      <button aria-pressed="true" data-f="all">All</button><button aria-pressed="false" data-f="MY">Malaysia</button><button aria-pressed="false" data-f="SG">Singapore</button>
+    </span>
+  </h2>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Run time</th><th>Batch</th><th>Items</th><th>Status</th><th>Duration</th></tr></thead>
+      <tbody id="runs"></tbody>
+    </table>
+  </div>
+</main>
+<script src="shell.js"></script>
+<script>
+(function () {
+  let flt = "all";
+  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function render() {
+    document.getElementById("runs").innerHTML = Runs.get().filter(r => flt === "all" || !r.m || r.m === flt).slice(0, 5).map(r =>
+      `<tr><td class="mono">${esc(r.t)}</td><td><b>${esc(r.batch)}</b></td><td class="mono">${r.items}</td><td><span class="ok" ${r.status === "Completed" ? "" : 'style="color:var(--warn);background:var(--warnbg)"'}>${esc(r.status)}</span></td><td class="mono">${esc(r.dur)}</td></tr>`).join("");
+  }
+  const btns = document.querySelectorAll(".seg button");
+  btns.forEach(b => b.onclick = () => { btns.forEach(x => x.setAttribute("aria-pressed", x === b)); flt = b.dataset.f; render(); });
+  render();
+})();
+</script>
+</body>
+</html>
