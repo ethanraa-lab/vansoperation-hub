@@ -282,9 +282,19 @@ const DEF = { "Handle":["rule","handle"],"Title":["rule","dam_title"],"Body HTML
   "Variant SKU":["sap","article code"],"Variant Barcodes":["rule","barcode"] };
 const DEFMETA = { plp_gender:["sap","mh5"],seasons:["sap","season code"],theme:["sap","theme"],franchise:["rule","franchise"],year:["sap","season year"],parent_sku:["sap","parent sku"],
   silhouette:["sap","ah3"],color_sku:["sap","old article number"],kids_gender:["sap","kids gender"],kids_age_group:["sap","kids age"],mh2:["sap","mh2"],mh4:["sap","mh4"],
-  ah1_silloute:["sap","ah1"],ah2_sub_silloutte:["sap","ah2"],masterstyle:["sap","style code"],isreturnable:["fixed",'["Yes"]'],iscancellable:["fixed",'["Yes"]'],pdp_details:["rule","pdp_html"] };
+  ah1_silloute:["sap","ah1"],ah2_sub_silloutte:["sap","ah2"],masterstyle:["sap","old article number"],isreturnable:["fixed",'["Yes"]'],iscancellable:["fixed",'["Yes"]'],pdp_details:["rule","pdp_html"] };
 const defMap = () => HEADERS.map(h => { const m = h.match(/^Metafield: custom\.(\w+)/), d = (m ? DEFMETA[m[1]] : DEF[h]) || ["blank", ""]; return { h, t: d[0], v: d[1] }; });
 let MAP = defMap();
+function formatMappedValue(header, value) {
+  if (header === "Metafield: custom.plp_gender [single_line_text_field]" ||
+      header === "Metafield: custom.seasons [single_line_text_field]") {
+    return proper(String(value ?? "").trim());
+  }
+  if (header === "Metafield: custom.masterstyle [single_line_text_field]") {
+    return String(value ?? "").trim().replace(/^(VN[A-Z0-9]{9})1$/i, "$1");
+  }
+  return value;
+}
 const evalMap = (m, c) => m.t === "fixed" ? m.v : m.t === "sap" ? (c.r[m.v] ?? "") : m.t === "rule" ? (RULEFN[m.v] || (() => ""))(c) : "";
 
 function renderMap() {
@@ -494,7 +504,7 @@ function build() {
       else { if (bcSeen.has(bc)) { dupBc++; summaryDetails.sI.rows.push(["Duplicate barcode", parent, `${bc} · ${r["article code"]}`]); } bcSeen.add(bc); }
       if (skuSeen.has(r["article code"])) { dupSku++; summaryDetails.sI.rows.push(["Duplicate variant SKU", parent, r["article code"]]); } skuSeen.add(r["article code"]);
       const c = { r, t, parent, title, handle, body, pdp, fr, sz, bc, i }, row = {};
-      HEADERS.forEach((h, k) => { row[h] = evalMap(MAP[k], c); }); OUT.push(row);
+      HEADERS.forEach((h, k) => { row[h] = formatMappedValue(h, evalMap(MAP[k], c)); }); OUT.push(row);
       summaryDetails.sV.rows.push([parent, row["Variant SKU"], row["Option2 Value"], row["Variant Barcodes"]]);
     });
   }
