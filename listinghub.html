@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vans Listing Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="./shared.css">
+<style>
+:root{--ink:#0B0D12;--canvas:#F2F3F6;--card:#fff;--line:#E2E5EB;--text:#10141F;--muted:#677084;--accent:#3D5AFE;--tint:#E8ECFF;--ok:#0F7A43;--okbg:#E3F5EB;--warn:#8F5200;--warnbg:#FFF1D6;--bad:#B3261E;--badbg:#FDE7E5;--sans:"Manrope",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--text);font:14px/1.5 var(--sans)}
+header{background:var(--ink);color:#fff;padding:20px clamp(16px,4vw,48px) 0}
+header h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+header p{margin:2px 0 14px;color:#A5ADC0}
+.steps{display:flex;gap:6px;overflow-x:auto}
+.st{font:600 13px var(--sans);display:flex;gap:8px;align-items:center;padding:10px 16px;border:0;background:transparent;color:#8E97AD;border-radius:10px 10px 0 0;cursor:pointer;white-space:nowrap}
+.st span{width:22px;height:22px;border-radius:50%;border:1.5px solid currentColor;display:grid;place-items:center;font-size:11px}
+.st.on{background:var(--canvas);color:var(--text)}.st.on span{background:var(--accent);border-color:var(--accent);color:#fff}
+.st.done{color:#fff}.st.done span{background:#fff;color:var(--ink);border-color:#fff}
+.st:disabled{opacity:.4;cursor:not-allowed}
+main{max-width:1180px;margin:0 auto;padding:22px clamp(16px,3vw,40px) 60px}
+.pane{display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+h2{margin:0 0 4px;font-size:16px;font-weight:700}
+h3{margin:0;font-size:14px;font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.two{grid-template-columns:1fr}}
+.drop{display:block;border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);cursor:pointer;margin-top:10px}
+.drop.over{background:var(--tint);border-color:var(--accent)}
+.drop input{position:absolute;opacity:0;width:1px;height:1px}
+.drop:focus-within,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.drop b{display:block;color:var(--text)}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--tint);color:#1f2f9e;border-radius:99px;padding:4px 6px 4px 12px;margin:8px 6px 0 0;font-size:13px;font-weight:600}
+.chip button{border:0;background:#fff;color:var(--bad);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{border-left:3px solid var(--line);padding-left:10px}
+.stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.stat span{color:var(--muted);font-size:13px}
+.msg{padding:9px 12px;border-radius:8px;margin-top:10px;font-size:13px}
+.msg.ok{background:var(--okbg);color:var(--ok)}.msg.warn{background:var(--warnbg);color:var(--warn)}.msg.bad{background:var(--badbg);color:var(--bad)}
+.msg ul{margin:6px 0 0;padding-left:18px}
+.btn{font:700 14px var(--sans);padding:11px 18px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{font-size:13px;padding:7px 12px}.btn.gh{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+.nav{display:flex;justify-content:space-between;gap:10px}
+.hint{color:var(--muted);font-size:13px}
+select,input[type=text],input[type=search]{padding:6px 8px;font:inherit;border:1px solid var(--line);border-radius:6px;background:#fff;max-width:100%}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:12px 0}
+.roles label{font-size:12px;color:var(--muted);display:block}.roles select{width:100%}
+.tw{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+.tw.sm{max-height:150px}.tw.sm table{font-size:11.5px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:5px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid #EEF0F4}
+th{background:#FAFBFC;position:sticky;top:0;font-weight:600}
+th.hit{background:var(--tint);color:#1f2f9e}th small{display:block;font-weight:700;color:var(--accent);font-size:10.5px}
+td.m{font-family:var(--mono)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#mapT select,#mapT input{padding:3px 6px;font-size:12.5px;min-width:150px}
+
+[hidden]{display:none!important}
+body{background:#F1F2F6}
+header{padding:18px clamp(16px,4vw,48px) 0}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.brand h1{margin:0;font-size:20px}.brand p{margin:0}
+.mark{width:34px;height:34px;border-radius:9px;background:conic-gradient(#fff 25%,#262B38 0 50%,#fff 0 75%,#262B38 0) 0 0/17px 17px;box-shadow:0 0 0 1px rgba(255,255,255,.14);flex:none}
+main{padding-bottom:120px}
+.card{border-radius:16px;box-shadow:0 1px 2px rgba(16,20,31,.05);padding:20px}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tag{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:#E9EBF1;color:#4B5468;padding:2px 9px;border-radius:99px}
+.drop{margin-top:14px;padding:26px 16px;background:#FAFBFD;transition:background .15s,border-color .15s}
+.drop:hover{border-color:#B9C2F5;background:var(--tint)}
+.drop svg{width:28px;height:28px;stroke:var(--accent);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-bottom:6px}
+.drop b{font-size:15px}.drop span{font-size:12.5px}
+.file{border:1px solid var(--line);border-radius:12px;margin-top:12px;background:#fff}
+.fh{display:flex;align-items:center;gap:12px;padding:12px 14px;flex-wrap:wrap}
+.ficon{width:40px;height:40px;border-radius:10px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700;letter-spacing:.05em;flex:none}
+.fmeta{flex:1;min-width:160px}.fmeta b{display:block;word-break:break-all;line-height:1.3}.fmeta span{color:var(--muted);font-size:12.5px}
+.badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.badge.ok{background:var(--okbg);color:var(--ok)}.badge.warn{background:var(--warnbg);color:var(--warn)}
+.x{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:17px;line-height:1;flex:none}
+.x:hover{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+.fb{border-top:1px solid var(--line);padding:4px 14px 14px;background:#FCFCFE;border-radius:0 0 12px 12px}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.strip .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-left:3px solid var(--accent)}
+.act{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line)}
+.actin{max-width:1180px;margin:0 auto;padding:12px clamp(16px,3vw,40px);display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+#actInfo{color:var(--muted);font-weight:500}
+#actBtn{padding:13px 24px;font-size:15px;box-shadow:0 6px 18px -8px rgba(61,90,254,.7)}
+.st{padding:10px 18px}
+
+/* Keep workbook-sized tables from widening the dashboard grid. */
+body[data-page="hub"]{grid-template-columns:252px minmax(0,1fr)}
+.wrapper,main,.pane,.card,.file,.fb,.tw,.stat{min-width:0}
+.wrapper{max-width:100%}
+main{width:100%;max-width:1440px;margin:0 auto}
+.pane,.two{grid-auto-columns:minmax(0,1fr)}
+.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.strip,.roles{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+.roles{grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.msg,.stat,.hint{overflow-wrap:anywhere}
+#q{min-width:min(100%,220px)!important}
+.hub-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.hub-title h1{margin-top:5px}
+.hub-title p{margin:6px 0 0;color:var(--muted)}
+.hub-title a:not(.btn){color:var(--accent)}
+#stp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:5px;margin-bottom:18px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.st{justify-content:center;border-radius:8px;color:var(--muted);white-space:normal;padding:9px 6px}
+.st span{flex:none}
+.st.on{background:var(--ink);color:#fff}
+.st.done{color:var(--ok)}
+.st.done span{background:var(--ok);color:#fff}
+.act{left:252px}
+.actin{max-width:1440px}
+.preview-scroll{max-width:100%;max-height:min(55vh,520px);overflow:auto;scrollbar-gutter:stable}
+.preview-scroll table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}
+.preview-scroll th,.preview-scroll td{vertical-align:top;min-width:130px;max-width:320px;white-space:pre-wrap;overflow-wrap:anywhere}
+.preview-scroll th{z-index:1;background:#f1f3f8}
+.preview-scroll td:first-child,.preview-scroll th:first-child{position:sticky;left:0;max-width:200px;background:#f8f9fc;box-shadow:1px 0 var(--line)}
+.preview-scroll th:first-child{z-index:2;background:#eef0f7}
+.preview-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.preview-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:900px){body[data-page="hub"]{grid-template-columns:minmax(0,1fr)}.act{left:0}}
+@media(max-width:800px){.two{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:520px){.st{flex-direction:column;font-size:11px}.nav{flex-wrap:wrap}}
+</style>
+</head>
+<body data-page="hub">
+<aside id="side"></aside>
+<div class="wrapper">
+<main>
+<div class="hub-title">
+  <div><span class="hint"><a href="index.html">Dashboard</a> / Vans Listing Hub</span><h1>Vans Listing Hub</h1><p>Merge SAP and DAM data into the Matrixify product import template.</p></div>
+  <a class="btn gh" href="index.html">← Dashboard</a>
+</div>
+<nav class="steps" id="stp" aria-label="Steps"></nav>
+<section class="pane" id="s1">
+  <div class="two">
+    <div class="card"><div class="ch"><h2>SAP export</h2><span class="tag">1 file</span></div>
+      <label class="drop" id="dropS"><input type="file" id="fS" accept=".xlsx,.xls,.csv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><b>Drop the SAP file here</b><span>or click to browse (.xlsx, .xls, .csv)</span></label>
+      <div id="chS"></div><div id="eS"></div></div>
+    <div class="card"><div class="ch"><h2>DAM files</h2><span class="tag">One or many</span></div>
+      <label class="drop" id="dropD"><input type="file" id="fD" accept=".xlsx,.xls,.csv" multiple><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><b>Drop DAM files here</b><span>or click to browse. Column names can differ in each file.</span></label>
+      <div id="chD"></div></div>
+  </div>
+  <div class="strip" id="sum"></div>
+</section>
+<section class="pane" id="s2" hidden>
+  <div class="card"><h2>Mapping preset</h2><span class="hint">Which source fills each Matrixify column. blank = empty, fixed = typed text, sap = a SAP column, rule = built-in rule.</span>
+    <div class="bar" style="margin-top:14px"><input type="search" id="q" placeholder="Search columns, sources or values" aria-label="Search the preset" style="flex:1;min-width:220px;padding:9px 12px">
+      <button class="btn sm" id="pSave">Save preset</button><button class="btn sm gh" id="pExp">Export</button>
+      <label class="btn sm gh" style="display:inline-block">Import<input type="file" id="pImp" accept=".json" hidden></label><button class="btn sm gh" id="pReset">Reset</button></div>
+    <div class="hint" id="pMsg" style="margin-top:6px"></div>
+    <div class="tw" style="max-height:520px"><table id="mapT"></table></div></div>
+</section>
+<section class="pane" id="s3" hidden>
+  <div class="strip">
+    <div class="stat"><b id="sPar">0</b><span>Parent SKUs (SAP)</span></div><div class="stat"><b id="sP">0</b><span>With DAM data</span></div>
+    <div class="stat"><b id="sU">0</b><span>Not in DAM (skipped)</span></div><div class="stat"><b id="sV">0</b><span>Variants (rows)</span></div>
+    <div class="stat"><b id="sI">0</b><span>Items to check</span></div></div>
+  <div class="card"><h2>Report</h2><div id="rep"></div></div>
+  <div class="card">
+    <h2 id="preview-title">Matrixify preview</h2>
+    <p class="hint" id="preview-help">Scroll inside this table to review every export column. The Handle column stays in view.</p>
+    <div class="tw preview-scroll" id="preview-scroll" tabindex="0" role="region" aria-labelledby="preview-title" aria-describedby="preview-help"><table id="pv"></table></div>
+    <div class="preview-footer"><span class="hint" id="cap" aria-live="polite"></span>
+      <div class="bar"><button type="button" class="btn sm gh" id="preview-prev">Previous rows</button><button type="button" class="btn sm gh" id="preview-next">Next rows</button></div>
+    </div>
+  </div>
+</section>
+</main>
+<div class="act"><div class="actin"><span id="actInfo"></span><button class="btn" id="actBtn"></button></div></div>
+</div>
+<script src="./shell.js"></script>
+<script>
+const HEADERS = ["Handle", "Title", "Body HTML", "Vendor", "Type", "Tags", "Tags Command", "Status", "Published", "Published Scope", "Image Src", "Image Command", "Image Position", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Variant Position", "Variant SKU", "Variant Barcodes", "Variant Image", "Variant Price", "Variant Compare At Price", "Variant Taxable", "Variant Inventory Tracker", "Variant Inventory Policy", "Variant Fulfillment Service", "Variant Requires Shipping", "Variant Shipping Profile", "Metafield: custom.plp_gender [single_line_text_field]", "Metafield: custom.seasons [single_line_text_field]", "Metafield: custom.theme [single_line_text_field]", "Metafield: custom.franchise [single_line_text_field]", "Metafield: custom.year [single_line_text_field]", "Metafield: custom.parent_sku [single_line_text_field]", "Metafield: custom.silhouette [single_line_text_field]", "Metafield: custom.color_sku [single_line_text_field]", "Metafield: custom.kids_gender [single_line_text_field]", "Metafield: custom.kids_age_group [single_line_text_field]", "Metafield: custom.mh2 [single_line_text_field]", "Metafield: custom.mh4 [single_line_text_field]", "Metafield: custom.ah1_silloute [single_line_text_field]", "Metafield: custom.ah2_sub_silloutte [single_line_text_field]", "Metafield: custom.masterstyle [single_line_text_field]", "Metafield: custom.product_subtitle [single_line_text_field]", "Metafield: custom.isreturnable [list.single_line_text_field]", "Metafield: custom.iscancellable [list.single_line_text_field]", "Metafield: custom.pdp_details [rich_text_field]"];
+const CLS = ["mh2","mh3","mh4","mh5","ah1","ah2","ah3"];
+const NEED = ["article code","parent sku","barcode","old article number","color","size","mh2","mh3","mh4","mh5","ah1","ah2","ah3","season code","season year","theme","kids gender","kids age","ftw franchise","silo","style code"];
+const PW = /\b(shoes?|tees?|t-shirts?|hats?|caps?|socks?|pants?|jackets?|shorts?|hoodies?|crew|bags?|tops?|slip-on|sneakers?|sandals?|vests?|beanies?|shirts?|sweat\w*)\b/i;
+const ROLES = { id: "Style-colour code", title: "Title", long: "Long description", details: "Details (bullets)" };
+const SHORT = { id: "Code", title: "Title", long: "Long desc", details: "Details" };
+
+const $ = id => document.getElementById(id);
+const norm = s => String(s ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const qa = s => esc(s).replace(/"/g, "&quot;");
+const proper = s => String(s).toLowerCase().replace(/(^|[\s\/-])([a-z])/g, (m,a,b) => a + b.toUpperCase());
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+let SAP = null, SAPNAME = "", SAPKEYS = new Set(), DAMF = [], OUT = [], STEP = 1, Q = "";
+
+async function readSheet(file) {
+  const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "", raw: false });
+}
+function size(raw) {
+  const s = String(raw || "").trim().replace(/^size\s*/i, "").trim(); let m;
+  if ((m = s.match(/^(\d{2})H$/i))) return String(parseInt(m[1], 10) + 0.5);
+  if ((m = s.match(/^(\d{3})$/))) return String(parseInt(m[1], 10) / 10);
+  if (/^\d{1,2}$/.test(s)) return String(parseInt(s, 10));
+  return /^[A-Za-z]+$/.test(s) && s.length > 3 ? proper(s) : s.toUpperCase();
+}
+const ORDER = ["XXS","XS","S","M","L","XL","XXL","XXXL"];
+const sizeRank = s => isNaN(+s) ? 1000 + (ORDER.indexOf(s) < 0 ? 99 : ORDER.indexOf(s)) : +s;
+
+/* ---- detect DAM columns from content ---- */
+function detect(rows) {
+  const cols = Object.keys(rows[0] || {}), P = {};
+  cols.forEach(c => {
+    let n = 0, len = 0, nl = 0, bs = 0, bi = 0, hit = 0, pw = 0, id = 0; const u = new Set();
+    for (const r of rows) {
+      const v = String(r[c] ?? "").trim(); if (!v) continue;
+      n++; len += v.length; u.add(v);
+      if (v.includes("\n")) nl++; if (v.startsWith("| ")) bs++; if (v.includes(" | ")) bi++;
+      if (PW.test(v)) pw++; if (/^VN[0-9A-Z]{9}$/.test(v)) id++; if (SAPKEYS.has(v.toUpperCase())) hit++;
+    }
+    const d = n || 1; P[c] = { fill: n / rows.length, uniq: u.size / d, avg: len / d, nl: nl / d, bs: bs / d, bi: bi / d, pw: pw / d, id: id / d, hit: hit / d };
+  });
+  const pick = (f, s) => { let b = "", bv = -1; for (const c of cols) if (f(P[c])) { const v = s(P[c]); if (v > bv) { bv = v; b = c; } } return b; };
+  return {
+    id: pick(p => p.fill > .5 && p.uniq > .9 && (p.hit > .1 || p.id > .9), p => p.hit + p.id),
+    title: pick(p => p.fill > .9 && p.avg < 60 && p.pw > .5, p => p.pw),
+    long: pick(p => p.avg > 150 && p.nl < .5 && p.bs < .5 && p.bi < .5, p => p.avg),
+    details: pick(p => p.nl > .9 && p.bs < .5, p => p.nl) || pick(p => p.bs > .9, p => p.bs) || pick(p => p.bi > .9 && p.nl < .1, p => p.bi)
+  };
+}
+const detectAll = () => DAMF.forEach(f => { f.det = detect(f.rows); });
+
+/* ---- mapping preset ---- */
+const RULES = { handle:"Handle (title + parent SKU)", dam_title:"DAM title", size:"Size (040 = 4, 04H = 4.5)", color_proper:"Colour, proper case", barcode:"Barcode without RS", franchise:"Franchise + silo, or title", type_proper:"Type from MH3, proper case", body_html:"DAM long description (HTML)", pdp_html:"DAM details (HTML list)", position:"Variant position (1, 2, 3...)" };
+const RULEFN = { handle:c=>c.handle, dam_title:c=>c.title, size:c=>c.sz, color_proper:c=>proper(c.r.color), barcode:c=>c.bc, franchise:c=>c.fr, type_proper:c=>proper(c.t.mh3), body_html:c=>c.body, pdp_html:c=>c.pdp, position:c=>c.i + 1 };
+const DEF = { "Handle":["rule","handle"],"Title":["rule","dam_title"],"Body HTML":["rule","body_html"],"Vendor":["fixed","VANS"],"Type":["rule","type_proper"],
+  "Tags Command":["fixed","MERGE"],"Status":["fixed","Draft"],"Published":["fixed","FALSE"],"Published Scope":["fixed","global"],"Image Command":["fixed","MERGE"],
+  "Option1 Name":["fixed","Color"],"Option1 Value":["rule","color_proper"],"Option2 Name":["fixed","Size"],"Option2 Value":["rule","size"],
+  "Variant SKU":["sap","article code"],"Variant Barcodes":["rule","barcode"] };
+const DEFMETA = { plp_gender:["sap","mh5"],seasons:["sap","season code"],theme:["sap","theme"],franchise:["rule","franchise"],year:["sap","season year"],parent_sku:["sap","parent sku"],
+  silhouette:["sap","ah3"],color_sku:["sap","old article number"],kids_gender:["sap","kids gender"],kids_age_group:["sap","kids age"],mh2:["sap","mh2"],mh4:["sap","mh4"],
+  ah1_silloute:["sap","ah1"],ah2_sub_silloutte:["sap","ah2"],masterstyle:["sap","style code"],isreturnable:["fixed",'["Yes"]'],iscancellable:["fixed",'["Yes"]'],pdp_details:["rule","pdp_html"] };
+const defMap = () => HEADERS.map(h => { const m = h.match(/^Metafield: custom\.(\w+)/), d = (m ? DEFMETA[m[1]] : DEF[h]) || ["blank", ""]; return { h, t: d[0], v: d[1] }; });
+let MAP = defMap();
+const evalMap = (m, c) => m.t === "fixed" ? m.v : m.t === "sap" ? (c.r[m.v] ?? "") : m.t === "rule" ? (RULEFN[m.v] || (() => ""))(c) : "";
+
+function renderMap() {
+  const cols = SAP && SAP[0] ? Object.keys(SAP[0]) : NEED; let shown = 0;
+  const rows = MAP.map((m, i) => {
+    if (Q && !(m.h + " " + m.t + " " + m.v).toLowerCase().includes(Q)) return ""; shown++;
+    const ts = ["blank","fixed","sap","rule"].map(t => `<option ${t === m.t ? "selected" : ""}>${t}</option>`).join("");
+    let v = "";
+    if (m.t === "fixed") v = `<input type="text" data-i="${i}" value="${qa(m.v)}">`;
+    else if (m.t === "sap") v = `<select data-i="${i}">${cols.map(c => `<option ${c === m.v ? "selected" : ""}>${qa(c)}</option>`).join("")}</select>`;
+    else if (m.t === "rule") v = `<select data-i="${i}">${Object.entries(RULES).map(([k, l]) => `<option value="${k}" ${k === m.v ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+    return `<tr><td>${esc(m.h.replace(/ \[.*\]/, ""))}</td><td><select data-i="${i}" data-t="1">${ts}</select></td><td>${v}</td></tr>`;
+  }).join("");
+  $("mapT").innerHTML = "<thead><tr><th>Matrixify column</th><th>Source</th><th>Value</th></tr></thead><tbody>" + (rows || `<tr><td colspan="3">No column matches "${esc(Q)}"</td></tr>`) + "</tbody>";
+  $("pMsg").textContent = `Showing ${shown} of ${MAP.length} columns`;
+}
+$("q").oninput = e => { Q = e.target.value.trim().toLowerCase(); renderMap(); };
+$("mapT").addEventListener("change", e => {
+  const i = +e.target.dataset.i, m = MAP[i]; if (isNaN(i)) return;
+  if (e.target.dataset.t) { m.t = e.target.value; m.v = m.t === "sap" ? "article code" : m.t === "rule" ? "handle" : ""; renderMap(); } else m.v = e.target.value;
+  renderAct();
+});
+$("mapT").addEventListener("input", e => { if (e.target.type === "text") MAP[+e.target.dataset.i].v = e.target.value; });
+const PKEY = "vlh-preset-v1", pm = t => { $("pMsg").textContent = t; };
+function loadMap(a) { if (!Array.isArray(a)) return false; const d = defMap(); a.forEach(x => { const i = HEADERS.indexOf(x.h); if (i > -1) d[i] = { h: x.h, t: x.t, v: x.v }; }); MAP = d; return true; }
+try { const sv = localStorage.getItem(PKEY); if (sv) loadMap(JSON.parse(sv)); } catch (e) {}
+$("pSave").onclick = () => { try { localStorage.setItem(PKEY, JSON.stringify(MAP)); pm("Preset saved in this browser."); } catch (e) { pm("Could not save: browser storage is blocked."); } };
+$("pExp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(MAP, null, 1)], { type: "application/json" })); a.download = "listing-hub-preset.json"; a.click(); };
+$("pImp").onchange = async e => { try { if (loadMap(JSON.parse(await e.target.files[0].text()))) { renderMap(); pm("Preset imported."); } } catch (x) { pm("This is not a valid preset file."); } e.target.value = ""; };
+$("pReset").onclick = () => { MAP = defMap(); renderMap(); pm("Reset to default."); };
+
+/* ---- steps ---- */
+function renderStep() {
+  const ready = SAP && DAMF.length;
+  $("stp").innerHTML = ["Upload and match","Mapping","Preview"].map((t, i) => { const n = i + 1, ok = n === 1 || (n === 2 ? ready : OUT.length > 0);
+    return `<button class="st ${n === STEP ? "on" : ""} ${n < STEP ? "done" : ""}" data-g="${n}" ${ok ? "" : "disabled"}><span>${n < STEP ? "✓" : n}</span>${t}</button>`; }).join("");
+}
+function goTo(n) { STEP = n; for (let i = 1; i <= 3; i++) $("s" + i).hidden = i !== n; if (n === 2) renderMap(); renderStep(); renderAct(); window.scrollTo(0, 0); }
+const parents = () => SAP ? new Set(SAP.map(r => r["parent sku"] || r["old article number"])).size : 0;
+const usable = () => SAP && DAMF.some(f => f.det && f.det.id && f.det.title);
+function renderAct() {
+  const b = $("actBtn"), i = $("actInfo");
+  if (STEP === 1) { b.textContent = "Continue to mapping →"; b.disabled = !usable(); b.onclick = () => goTo(2);
+    i.textContent = !SAP ? "Add the SAP file to begin" : !DAMF.length ? "Add at least one DAM file" : !usable() ? "Match the code and title columns of a DAM file" : `${parents()} parent SKUs · ${DAMF.length} DAM file${DAMF.length > 1 ? "s" : ""} ready`; }
+  else if (STEP === 2) { b.textContent = "Run mapping and preview →"; b.disabled = false; b.onclick = run; i.textContent = `${MAP.filter(m => m.t !== "blank").length} of ${MAP.length} columns will be filled`; }
+  else { b.textContent = "Download Matrixify file (.xlsx)"; b.disabled = !OUT.length; b.onclick = download; i.textContent = `${OUT.length.toLocaleString()} rows ready to import`; }
+}
+
+function refresh() {
+  renderSap(); renderDam();
+  $("sum").innerHTML = [["SAP rows", SAP ? SAP.length : 0], ["Parent SKUs", parents()], ["DAM files", DAMF.length], ["DAM style-colours", DAMF.reduce((a, f) => a + f.rows.length, 0)]]
+    .map(([l, n]) => `<div class="stat"><b>${n.toLocaleString()}</b><span>${l}</span></div>`).join("");
+  renderStep(); renderAct();
+}
+document.addEventListener("click", e => {
+  const x = e.target.closest("[data-x]"), g = e.target.closest("[data-g]"), o = e.target.closest("[data-o]");
+  if (x) { const k = x.dataset.x; if (k === "s") { SAP = null; SAPKEYS = new Set(); $("eS").innerHTML = ""; } else DAMF.splice(+k.slice(1), 1); OUT = []; detectAll(); refresh(); }
+  if (g && !g.disabled) goTo(+g.dataset.g);
+  if (o) { const f = DAMF[+o.dataset.o], d = f.det || {}; f.open = !(f.open ?? !(d.id && d.title)); renderDam(); }
+});
+
+/* ---- file rows: SAP and DAM, with expandable column preview ---- */
+function renderSap() {
+  $("chS").innerHTML = SAP ? `<div class="file"><div class="fh"><div class="ficon">SAP</div><div class="fmeta"><b>${esc(SAPNAME)}</b><span>${SAP.length.toLocaleString()} rows · ${parents()} parent SKUs</span></div><span class="badge ok">Loaded</span><button class="x" data-x="s" aria-label="Remove ${qa(SAPNAME)}">×</button></div></div>` : "";
+}
+function renderDam() {
+  $("chD").innerHTML = DAMF.map((f, i) => {
+    const d = f.det || {}, cols = Object.keys(f.rows[0] || {}), ok = d.id && d.title, n = Object.keys(ROLES).filter(k => d[k]).length, open = f.open ?? !ok, role = {};
+    Object.keys(ROLES).forEach(k => { if (d[k]) role[d[k]] = (role[d[k]] ? role[d[k]] + ", " : "") + SHORT[k]; });
+    const sels = Object.entries(ROLES).map(([k, l]) => `<div><label for="r${i}${k}">${l}</label><select id="r${i}${k}" data-f="${i}" data-r="${k}"><option value="">(none)</option>${cols.map(c => `<option value="${qa(c)}" ${c === d[k] ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></div>`).join("");
+    const th = cols.map(c => `<th class="${role[c] ? "hit" : ""}">${esc(c)}${role[c] ? `<small>${role[c]}</small>` : ""}</th>`).join("");
+    const trs = f.rows.slice(0, 3).map(r => "<tr>" + cols.map(c => { const v = String(r[c] ?? "").replace(/\s*\n\s*/g, " ↵ "); return `<td>${esc(v.length > 28 ? v.slice(0, 28) + "…" : v)}</td>`; }).join("") + "</tr>").join("");
+    const bad = ok ? "" : `<div class="msg warn">Choose the style-colour code and title columns. Without them this file is not used.</div>`;
+    return `<div class="file"><div class="fh"><div class="ficon">DAM</div><div class="fmeta"><b>${esc(f.name)}</b><span>${f.rows.length.toLocaleString()} rows · ${cols.length} columns</span></div>
+      <span class="badge ${ok ? "ok" : "warn"}">${ok ? n + " of 4 columns matched" : "Needs attention"}</span>
+      <button class="btn sm gh" data-o="${i}" aria-expanded="${open}">${open ? "Hide preview" : "Preview and match columns"}</button>
+      <button class="x" data-x="d${i}" aria-label="Remove ${qa(f.name)}">×</button></div>
+      <div class="fb" ${open ? "" : "hidden"}>${bad}<div class="roles">${sels}</div><div class="tw sm"><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div></div></div>`;
+  }).join("");
+}
+$("chD").addEventListener("change", e => { const t = e.target; if (t.dataset.f === undefined) return; DAMF[+t.dataset.f].det[t.dataset.r] = t.value; renderDam(); renderAct(); });
+
+/* ---- load files ---- */
+async function loadSap(f) {
+  const raw = await readSheet(f);
+  SAP = raw.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [norm(k), String(v).trim()]))); SAPNAME = f.name;
+  const have = new Set(Object.keys(SAP[0] || {})), miss = NEED.filter(n => !have.has(n));
+  SAPKEYS = new Set(SAP.map(r => r["old article number"].slice(0, 11).toUpperCase()));
+  $("eS").innerHTML = miss.length ? `<div class="msg bad">Missing SAP columns: ${esc(miss.join(", "))}</div>` : "";
+  OUT = []; detectAll(); refresh();
+}
+async function addDam(list) {
+  for (const f of list) { const rows = await readSheet(f); if (rows.length) DAMF.push({ name: f.name, rows, det: null }); }
+  OUT = []; detectAll(); refresh();
+}
+$("fS").onchange = e => { if (e.target.files[0]) loadSap(e.target.files[0]); e.target.value = ""; };
+$("fD").onchange = e => { addDam([...e.target.files]); e.target.value = ""; };
+[["dropS", f => loadSap(f[0])], ["dropD", f => addDam(f)]].forEach(([id, fn]) => { const z = $(id);
+  ["dragenter","dragover"].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.add("over"); }));
+  ["dragleave","drop"].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.remove("over"); }));
+  z.addEventListener("drop", e => e.dataTransfer.files.length && fn([...e.dataTransfer.files])); });
+
+/* ---- build ---- */
+function build() {
+  const dam = new Map(), badFiles = [];
+  DAMF.forEach(f => { const d = f.det; if (!d.id || !d.title) { badFiles.push(f.name); return; }
+    f.rows.forEach(r => { const k = String(r[d.id]).trim().toUpperCase(); if (k && !dam.has(k)) dam.set(k, { title: String(r[d.title]).trim(), long: d.long ? String(r[d.long] ?? "").trim() : "", det: d.details ? String(r[d.details] ?? "") : "" }); }); });
+  const groups = new Map(); OUT = [];
+  SAP.forEach(r => { const k = r["parent sku"] || r["old article number"]; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
+  const unmatched = [], stillBlank = [], oddSizes = new Set(), skuSeen = new Set(), bcSeen = new Set(), hSeen = new Set(), rep = [];
+  let filled = 0, noBarcode = 0, dupSku = 0, dupBc = 0, dupH = 0, products = 0;
+
+  for (const [parent, rows] of groups) {
+    const d = dam.get(rows[0]["old article number"].slice(0, 11).toUpperCase());
+    if (!d) { unmatched.push(`${parent} (${rows[0]["article description"]})`); continue; }
+    CLS.forEach(k => { const v = rows.map(r => r[k]).find(x => x); rows.forEach(r => { if (!r[k] && v) { r[k] = v; filled++; } }); if (!v) stillBlank.push(`${parent}: ${k.toUpperCase()}`); });
+    const t = rows[0], title = d.title, handle = slug(title + " " + parent);
+    if (hSeen.has(handle)) dupH++; hSeen.add(handle); products++;
+    const body = d.long ? "<p>" + esc(d.long).replace(/\r?\n+/g, "<br>") + "</p>" : "";
+    const lines = d.det.split(/\r?\n/).flatMap(l => l.split(" | ")).map(l => l.replace(/^\|\s*/, "").trim()).filter(Boolean);
+    const pdp = lines.length ? "<ul>" + lines.map(l => "<li>" + esc(l) + "</li>").join("") + "</ul>" : "";
+    const fr = [t["ftw franchise"], t["silo"]].filter(x => x && x.toUpperCase() !== "NA").join(" ") || title;
+    rows.map(r => ({ r, sz: size(r.size) })).sort((a, b) => sizeRank(a.sz) - sizeRank(b.sz)).forEach(({ r, sz }, i) => {
+      if (isNaN(+sz) && !ORDER.includes(sz)) oddSizes.add(sz);
+      const bc = r.barcode.replace(/^RS/i, "");
+      if (!bc) noBarcode++; else { if (bcSeen.has(bc)) dupBc++; bcSeen.add(bc); }
+      if (skuSeen.has(r["article code"])) dupSku++; skuSeen.add(r["article code"]);
+      const c = { r, t, parent, title, handle, body, pdp, fr, sz, bc, i }, row = {};
+      HEADERS.forEach((h, k) => { row[h] = evalMap(MAP[k], c); }); OUT.push(row);
+    });
+  }
+  const issues = stillBlank.length + dupSku + dupBc + dupH + noBarcode + oddSizes.size;
+  $("sPar").textContent = groups.size; $("sP").textContent = products; $("sU").textContent = unmatched.length; $("sV").textContent = OUT.length; $("sI").textContent = issues;
+  const list = a => "<ul>" + a.slice(0, 12).map(x => `<li>${esc(x)}</li>`).join("") + (a.length > 12 ? `<li>and ${a.length - 12} more</li>` : "") + "</ul>";
+  if (badFiles.length) rep.push(`<div class="msg warn">Not used (no code or title column): ${esc(badFiles.join(", "))}</div>`);
+  if (unmatched.length) rep.push(`<div class="msg warn"><b>${unmatched.length} parent SKUs have no DAM entry and are not in the file.</b> They may be in another DAM file.${list(unmatched)}</div>`);
+  if (filled) rep.push(`<div class="msg ok">${filled} blank classification values were filled from other sizes of the same style-colour.</div>`);
+  if (stillBlank.length) rep.push(`<div class="msg bad"><b>Classification still blank</b> (collection rules may fail):${list(stillBlank)}</div>`);
+  if (noBarcode) rep.push(`<div class="msg bad">${noBarcode} variants have no barcode.</div>`);
+  if (dupSku) rep.push(`<div class="msg bad">${dupSku} duplicate Variant SKUs.</div>`);
+  if (dupBc) rep.push(`<div class="msg bad">${dupBc} duplicate barcodes.</div>`);
+  if (dupH) rep.push(`<div class="msg bad">${dupH} duplicate handles.</div>`);
+  if (oddSizes.size) rep.push(`<div class="msg warn">Sizes kept as text: ${[...oddSizes].map(esc).join(", ")}</div>`);
+  if (!issues && !unmatched.length && !badFiles.length) rep.push(`<div class="msg ok">No issues found.</div>`);
+  $("rep").innerHTML = rep.join("");
+  renderPreview(0);
+}
+
+const PREVIEW_PAGE_SIZE = 60;
+let previewOffset = 0;
+function renderPreview(offset) {
+  previewOffset = offset;
+  const rows = OUT.slice(offset, offset + PREVIEW_PAGE_SIZE);
+  const headers = HEADERS.map(h => `<th scope="col">${esc(h)}</th>`).join("");
+  const body = rows.map(row => "<tr>" + HEADERS.map(h =>
+    `<td class="${/SKU|Barcode|Handle/.test(h) ? "m" : ""}">${esc(row[h] ?? "")}</td>`
+  ).join("") + "</tr>").join("");
+  $("pv").innerHTML = "<thead><tr>" + headers + "</tr></thead><tbody>" + body + "</tbody>";
+  $("cap").textContent = rows.length
+    ? `Rows ${offset + 1}–${offset + rows.length} of ${OUT.length} · ${HEADERS.length} columns`
+    : `No rows to preview · ${HEADERS.length} columns`;
+  $("preview-prev").disabled = offset === 0;
+  $("preview-next").disabled = offset + rows.length >= OUT.length;
+  $("preview-scroll").scrollTop = 0;
+  if (offset === 0) $("preview-scroll").scrollLeft = 0;
+}
+$("preview-prev").onclick = () => renderPreview(previewOffset - PREVIEW_PAGE_SIZE);
+$("preview-next").onclick = () => renderPreview(previewOffset + PREVIEW_PAGE_SIZE);
+function run() { if (!SAP || !DAMF.length) return; build(); goTo(3); }
+
+function download() {
+  const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...OUT.map(r => HEADERS.map(h => r[h]))]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Products");
+  XLSX.writeFile(wb, `Vans_New_Product_Listing_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+refresh(); goTo(1);
+</script>
+</body>
+</html>
