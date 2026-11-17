@@ -9,52 +9,74 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
-h2{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:34px 0 12px;display:flex;justify-content:space-between;align-items:center}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
-.kpi .ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
-.kpi p{margin:0;color:var(--muted);font-weight:500}
-.kpi strong{display:block;font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.15;font-variant-numeric:tabular-nums}
-.kpi strong em{font-size:15px;font-style:normal;font-weight:600;color:var(--muted);margin-left:3px}
-.kpi small{color:var(--muted);font-size:12px}
-.hero{position:relative;overflow:hidden;background:var(--ink);color:#fff;border-radius:18px;padding:26px 28px;margin-top:14px;display:grid;grid-template-columns:1fr auto;gap:22px;align-items:end}
-.hero::after{content:"";position:absolute;right:0;top:0;width:340px;height:100%;opacity:.09;background:conic-gradient(#fff 25%,transparent 0 50%,#fff 0 75%,transparent 0) 0 0/36px 36px;-webkit-mask-image:linear-gradient(to left,#000,transparent);mask-image:linear-gradient(to left,#000,transparent);pointer-events:none}
-.hero>*{position:relative;z-index:1}
-.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8E97AD;font-weight:600}
-.hero h3{margin:6px 0 2px;font-size:26px;font-weight:800;letter-spacing:-.025em}
-.hero p{margin:0;color:#A5ADC0}
-.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);margin:18px 0 14px;overflow:hidden;max-width:560px}
-.bar i{display:block;height:100%;width:84%;border-radius:99px;background:var(--accent);animation:grow .9s cubic-bezier(.2,.8,.2,1) both}
-.steps{display:flex;gap:8px;flex-wrap:wrap}
-.step{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.16);color:#C5CAD6;display:inline-flex;gap:6px;align-items:center}
-.step.done{color:#fff;border-color:rgba(255,255,255,.28)}
-.step.now{background:#fff;color:var(--ink);border-color:#fff}
+/* Dashboard styling lives here so the other tools can keep their shared theme. */
+body[data-page="dashboard"]{
+  background:radial-gradient(ellipse at 86% 0,#eef1ff 0,transparent 28rem),#f5f6fa;
+  grid-template-columns:252px minmax(0,1fr);
+}
+main{min-width:0;max-width:1500px;padding:40px clamp(22px,4vw,64px) 60px}
+.top{align-items:center;margin-bottom:25px}
+h1{font-size:clamp(36px,4vw,54px);letter-spacing:-.065em}
+.sub{flex-wrap:wrap;gap:8px 12px}
+.pill{background:#e6eaff;color:#3144aa}
+.top .btn{min-height:44px}
+h2{font-size:19px;font-weight:800;letter-spacing:-.035em;margin:30px 0 12px;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center}
+
+.hero{
+  isolation:isolate;position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;gap:24px;padding:clamp(23px,3vw,38px);margin:0 0 15px;color:white;border-radius:22px;
+  background:radial-gradient(ellipse at 95% 5%,#26347a,transparent 58%),linear-gradient(125deg,#0b0f20,#161b39);
+}
+.hero::after{
+  content:"";position:absolute;inset:0 0 0 43%;z-index:-1;opacity:.15;pointer-events:none;
+  background:conic-gradient(#b6c1ff 25%,transparent 0 50%,#b6c1ff 0 75%,transparent 0) 0 0/40px 40px;
+  mask-image:linear-gradient(105deg,transparent,#000);
+}
+.eyebrow{font:700 11px var(--sans);letter-spacing:.15em;text-transform:uppercase;color:#b9c5ff}
+.hero h3{margin:8px 0 4px;font-size:clamp(24px,3.25vw,43px);line-height:1.12;letter-spacing:-.05em}
+.hero p{margin:0;color:#c4cee8}
+.bar{height:7px;border-radius:99px;background:#ffffff29;margin:18px 0 13px;overflow:hidden;max-width:520px}
+.bar i{display:block;height:100%;width:84%;border-radius:99px;background:linear-gradient(90deg,#6477ff,#abb7ff);animation:grow .9s ease-out both}
+.steps,.tags{display:flex;gap:6px;flex-wrap:wrap}
+.step{font-size:12px;font-weight:650;padding:4px 10px;border-radius:99px;border:1px solid #ffffff40;color:#cbd4ee;display:inline-flex;gap:6px;align-items:center}
+.step.done{color:#fff}
+.step.now{background:#e7ebff;color:#233273;border-color:#e7ebff}
 .step svg{width:13px;height:13px}
-.btn.light{background:#fff;color:var(--ink)}
-.btn.light:hover{box-shadow:0 8px 24px -8px rgba(255,255,255,.5)}
-.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
-.tool{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:6px;transition:transform .18s,box-shadow .18s,border-color .18s}
-.tool:hover{transform:translateY(-3px);border-color:#C9CFDB;box-shadow:0 14px 30px -18px rgba(16,20,31,.35)}
-.tool .ic{width:40px;height:40px;border-radius:11px;background:var(--ink);color:#fff;display:grid;place-items:center;margin-bottom:10px}
-.tool b{font-size:16px;font-weight:700;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
-.tool b svg{color:var(--muted);transition:transform .18s,color .18s}
-.tool:hover b svg{transform:translateX(3px);color:var(--accent)}
-.tool p{margin:0;color:var(--muted)}
-.tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.tag{font:500 12px var(--mono);padding:2px 8px;border-radius:6px;background:#EEF0F5;color:#3B4458}
-.seg{display:inline-flex;background:#E7E9EF;border-radius:10px;padding:3px}
-.seg button{font:600 12px var(--sans);border:0;background:none;padding:5px 12px;border-radius:7px;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed=true]{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(16,20,31,.12)}
-.tw{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:640px}
-th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 18px;border-bottom:1px solid var(--line);background:#FAFBFC}
-td{padding:14px 18px;border-bottom:1px solid #EEF0F4}
+.btn.light{background:#fff;color:var(--ink);justify-self:start}
+.btn.light:hover{background:#ecefff}
+
+.kpis,.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi,.tool,.tw{background:var(--card);border:1px solid #e1e5ef;border-radius:16px}
+.kpi{padding:15px 16px;display:grid;grid-template-columns:32px minmax(0,1fr);gap:3px 9px;align-items:center}
+.kpi .ic{width:32px;height:32px;border-radius:9px;background:var(--accent-soft);color:#354bd8;display:grid;place-items:center}
+.kpi p,.tool p{margin:0;color:var(--muted)}
+.kpi strong{grid-column:1/-1;font-size:clamp(27px,3.2vw,37px);font-weight:800;letter-spacing:-.05em;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi strong em{font-size:14px;font-style:normal;font-weight:650;color:var(--muted);margin-left:4px}
+.kpi small{grid-column:1/-1;color:var(--muted);font-size:12px}
+.tool{padding:16px;display:flex;flex-direction:column;gap:7px;transition:transform .18s,box-shadow .18s,border-color .18s}
+.tool:hover,.tool:focus-visible{transform:translateY(-2px);border-color:#a8b3f4;box-shadow:0 10px 24px -16px #2b398a80}
+.tool .ic{width:38px;height:38px;border-radius:10px;background:#edf0ff;color:#3449ce;display:grid;place-items:center;margin-bottom:3px}
+.tool b{font-size:15px;line-height:1.35;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.tool b svg{width:15px;color:#5365cb}
+.tags{margin-top:4px}
+.tag{font:500 11px var(--mono);padding:3px 6px;border-radius:5px;background:#eef0f5;color:#3b4458}
+
+.seg{display:inline-flex;background:#e9ecf6;border-radius:10px;padding:3px}
+.seg button{font:650 12px var(--sans);border:0;background:none;padding:6px 10px;border-radius:7px;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;color:#293eb0;box-shadow:0 1px 4px #161f491a}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:610px}
+th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:11px 15px;border-bottom:1px solid var(--line);background:#f8f9fd}
+td{padding:12px 15px;border-bottom:1px solid #eef0f4}
 tr:last-child td{border-bottom:0}
-tbody tr:hover td{background:#FAFBFD}
-.mono{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
-.ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ok);background:var(--ok-bg);padding:3px 10px;border-radius:99px}
-.ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok)}
-@media (max-width:900px){.hero{grid-template-columns:1fr}}
+tbody tr:hover td{background:#f9faff}
+.mono{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.ok{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:650;color:var(--ok);background:var(--ok-bg);padding:3px 9px;border-radius:99px}
+.ok::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+@media(max-width:1200px){.kpis,.tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){body[data-page="dashboard"]{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:590px){main{padding:23px 16px 38px}.hero{grid-template-columns:1fr;gap:16px}.kpi,.tool{padding:12px}.kpi{grid-template-columns:1fr}.sub{align-items:flex-start}}
+@media(max-width:360px){.tools{grid-template-columns:1fr}}
 </style>
 </head>
 <body data-page="dashboard">
@@ -67,13 +89,6 @@ tbody tr:hover td{background:#FAFBFD}
     </div>
     <a class="btn" href="listinghub.html" data-link="hub"><svg class="i"><use href="#plus"/></svg>New listing batch</a>
   </div>
-
-  <section class="kpis" aria-label="Summary">
-    <div class="kpi rise d1"><div class="ic"><svg class="i"><use href="#layers"/></svg></div><p>Active batches</p><strong>3</strong><small>2 Malaysia, 1 Singapore</small></div>
-    <div class="kpi rise d2"><div class="ic"><svg class="i"><use href="#image"/></svg></div><p>Waiting for images</p><strong>8</strong><small>All in November Drop</small></div>
-    <div class="kpi rise d3"><div class="ic"><svg class="i"><use href="#done"/></svg></div><p>Ready to export</p><strong>2</strong><small>Import files can be generated</small></div>
-    <div class="kpi rise d4"><div class="ic"><svg class="i"><use href="#clock"/></svg></div><p>Estimated time saved</p><strong>33<em>min</em></strong><small>Across this week's runs</small></div>
-  </section>
 
   <section class="hero rise d4" aria-label="Continue batch">
     <div>
@@ -89,6 +104,13 @@ tbody tr:hover td{background:#FAFBFD}
       </div>
     </div>
     <a class="btn light" href="soon.html?p=images" data-link="images">Find images for 8 items<svg class="i"><use href="#arrow"/></svg></a>
+  </section>
+
+  <section class="kpis" aria-label="Summary">
+    <div class="kpi rise d1"><div class="ic"><svg class="i"><use href="#layers"/></svg></div><p>Active batches</p><strong>3</strong><small>2 Malaysia, 1 Singapore</small></div>
+    <div class="kpi rise d2"><div class="ic"><svg class="i"><use href="#image"/></svg></div><p>Waiting for images</p><strong>8</strong><small>All in November Drop</small></div>
+    <div class="kpi rise d3"><div class="ic"><svg class="i"><use href="#done"/></svg></div><p>Ready to export</p><strong>2</strong><small>Import files can be generated</small></div>
+    <div class="kpi rise d4"><div class="ic"><svg class="i"><use href="#clock"/></svg></div><p>Estimated time saved</p><strong>33<em>min</em></strong><small>Across this week's runs</small></div>
   </section>
 
   <h2>Tools</h2>
@@ -118,7 +140,7 @@ tbody tr:hover td{background:#FAFBFD}
   const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   function render() {
     document.getElementById("runs").innerHTML = Runs.get().filter(r => flt === "all" || !r.m || r.m === flt).slice(0, 5).map(r =>
-      `<tr><td class="mono">${esc(r.t)}</td><td><b>${esc(r.batch)}</b></td><td class="mono">${r.items}</td><td><span class="ok" ${r.status === "Completed" ? "" : 'style="color:var(--warn);background:var(--warnbg)"'}>${esc(r.status)}</span></td><td class="mono">${esc(r.dur)}</td></tr>`).join("");
+      `<tr><td class="mono">${esc(r.t)}</td><td><b>${esc(r.batch)}</b></td><td class="mono">${esc(r.items)}</td><td><span class="ok" ${r.status === "Completed" ? "" : 'style="color:var(--warn);background:var(--warnbg)"'}>${esc(r.status)}</span></td><td class="mono">${esc(r.dur)}</td></tr>`).join("");
   }
   const btns = document.querySelectorAll(".seg button");
   btns.forEach(b => b.onclick = () => { btns.forEach(x => x.setAttribute("aria-pressed", x === b)); flt = b.dataset.f; render(); });
