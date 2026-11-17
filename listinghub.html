@@ -162,6 +162,39 @@ body:has(.detail-dialog[open]){overflow:hidden}
   #s3 .stat,#s3 .stat::after{transition:none}
   #s3 .stat:hover,#s3 .stat:hover::after{transform:none}
 }
+
+/* Source colors follow the mapping row as its source changes. */
+#s2 .card{
+  background:linear-gradient(145deg,#edf1ff 0, #fafbff 140px, #fff 290px);
+}
+#s2 .tw{background:#fff}
+#mapT th{background:#e9eeff;color:#243468;z-index:1;padding-block:9px}
+#mapT tr[data-source]{
+  --source-color:#475569;--source-bg:#edf1f6;--source-line:#cbd5e1;--source-active:#f0f4f9;
+}
+#mapT tr[data-source="rule"],.source-key [data-source="rule"]{
+  --source-color:#4d3297;--source-bg:#eee7ff;--source-line:#c9b8f6;--source-active:#f4efff;
+}
+#mapT tr[data-source="sap"],.source-key [data-source="sap"]{
+  --source-color:#12604e;--source-bg:#dff5ec;--source-line:#8fd6c0;--source-active:#eaf8f2;
+}
+#mapT tr[data-source="fixed"],.source-key [data-source="fixed"]{
+  --source-color:#8a4a08;--source-bg:#fff0d6;--source-line:#e9c488;--source-active:#fff6e6;
+}
+#mapT tr:nth-child(even) td{background:#f7f9fd}
+#mapT tr[data-source] td{transition:background .18s ease}
+#mapT tr[data-source] td:first-child{box-shadow:inset 3px 0 var(--source-line)}
+#mapT tr[data-source]:hover td,#mapT tr[data-source]:focus-within td{background:var(--source-active)}
+#mapT tr[data-source] select[data-t],.source-key span{
+  color:var(--source-color,#475569);background:var(--source-bg,#edf1f6);border:1px solid var(--source-line,#cbd5e1);
+  font-weight:700;
+}
+#mapT tr[data-source] select:focus-visible,#mapT tr[data-source] input:focus-visible{
+  outline:2px solid var(--source-color);outline-offset:1px;
+}
+.source-key{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.source-key span{padding:2px 8px;border-radius:99px;font-size:12px}
+@media(prefers-reduced-motion:reduce){#mapT tr[data-source] td{transition:none}}
 </style>
 </head>
 <body data-page="hub">
@@ -185,7 +218,8 @@ body:has(.detail-dialog[open]){overflow:hidden}
   <div class="strip" id="sum"></div>
 </section>
 <section class="pane" id="s2" hidden>
-  <div class="card"><h2>Mapping preset</h2><span class="hint">Which source fills each Matrixify column. blank = empty, fixed = typed text, sap = a SAP column, rule = built-in rule.</span>
+  <div class="card"><h2>Mapping preset</h2><span class="hint">Choose how each Matrixify column is filled.</span>
+    <div class="source-key" aria-label="Mapping source key"><span data-source="rule">Rule · Built-in logic</span><span data-source="sap">SAP · Source column</span><span data-source="fixed">Fixed · Typed value</span><span data-source="blank">Blank · Empty</span></div>
     <div class="bar" style="margin-top:14px"><input type="search" id="q" placeholder="Search columns, sources or values" aria-label="Search the preset" style="flex:1;min-width:220px;padding:9px 12px">
       <button class="btn sm" id="pSave">Save preset</button><button class="btn sm gh" id="pExp">Export</button>
       <label class="btn sm gh" style="display:inline-block">Import<input type="file" id="pImp" accept=".json" hidden></label><button class="btn sm gh" id="pReset">Reset</button></div>
@@ -306,7 +340,7 @@ function renderMap() {
     if (m.t === "fixed") v = `<input type="text" data-i="${i}" value="${qa(m.v)}">`;
     else if (m.t === "sap") v = `<select data-i="${i}">${cols.map(c => `<option ${c === m.v ? "selected" : ""}>${qa(c)}</option>`).join("")}</select>`;
     else if (m.t === "rule") v = `<select data-i="${i}">${Object.entries(RULES).map(([k, l]) => `<option value="${k}" ${k === m.v ? "selected" : ""}>${l}</option>`).join("")}</select>`;
-    return `<tr><td>${esc(m.h.replace(/ \[.*\]/, ""))}</td><td><select data-i="${i}" data-t="1">${ts}</select></td><td>${v}</td></tr>`;
+    return `<tr data-source="${qa(m.t)}"><td>${esc(m.h.replace(/ \[.*\]/, ""))}</td><td><select data-i="${i}" data-t="1">${ts}</select></td><td>${v}</td></tr>`;
   }).join("");
   $("mapT").innerHTML = "<thead><tr><th>Matrixify column</th><th>Source</th><th>Value</th></tr></thead><tbody>" + (rows || `<tr><td colspan="3">No column matches "${esc(Q)}"</td></tr>`) + "</tbody>";
   $("pMsg").textContent = `Showing ${shown} of ${MAP.length} columns`;
@@ -314,7 +348,11 @@ function renderMap() {
 $("q").oninput = e => { Q = e.target.value.trim().toLowerCase(); renderMap(); };
 $("mapT").addEventListener("change", e => {
   const i = +e.target.dataset.i, m = MAP[i]; if (isNaN(i)) return;
-  if (e.target.dataset.t) { m.t = e.target.value; m.v = m.t === "sap" ? "article code" : m.t === "rule" ? "handle" : ""; renderMap(); } else m.v = e.target.value;
+  if (e.target.dataset.t) { m.t = e.target.value;
+    m.v = m.t === "sap" ? "article code" : m.t === "rule" ? "handle" : "";
+    renderMap();
+    $("mapT").querySelector(`select[data-t][data-i="${i}"]`)?.focus({preventScroll:true});
+  } else m.v = e.target.value;
   renderAct();
 });
 $("mapT").addEventListener("input", e => { if (e.target.type === "text") MAP[+e.target.dataset.i].v = e.target.value; });
