@@ -124,6 +124,27 @@ main{width:100%;max-width:1440px;margin:0 auto}
 @media(max-width:900px){body[data-page="hub"]{grid-template-columns:minmax(0,1fr)}.act{left:0}}
 @media(max-width:800px){.two{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:520px){.st{flex-direction:column;font-size:11px}.nav{flex-wrap:wrap}}
+
+#s3 .stat{font:inherit;text-align:left;color:var(--text);cursor:pointer;position:relative;padding-right:29px;transition:border-color .18s,background .18s,transform .18s}
+#s3 .stat::after{content:"↗";position:absolute;right:12px;top:12px;color:var(--accent)}
+#s3 .stat:hover{background:#f6f7ff;border-color:var(--accent);transform:translateY(-2px)}
+.detail-dialog{width:min(720px,calc(100% - 28px));max-height:85vh;max-height:85dvh;padding:0;border:1px solid var(--line);border-radius:18px;color:var(--text);background:var(--card);box-shadow:0 24px 80px #090e324d}
+.detail-dialog[open]{display:flex;flex-direction:column;animation:detail-in .22s cubic-bezier(.2,.75,.2,1) both}
+.detail-dialog::backdrop{background:#0b102b77;animation:detail-fade .22s ease both}
+@keyframes detail-in{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes detail-fade{from{opacity:0}to{opacity:1}}
+.detail-head,.detail-foot{padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex:none}
+.detail-head{border-bottom:1px solid var(--line)}
+.detail-head h2{font-size:19px}
+.detail-foot{border-top:1px solid var(--line)}
+.detail-scroll{overflow:auto;min-height:0;max-height:52vh;overscroll-behavior:contain}
+.detail-scroll th{z-index:1;background:#f3f5fd}
+.detail-scroll td,.detail-scroll th{white-space:normal;overflow-wrap:anywhere;padding:9px 12px;vertical-align:top}
+.detail-scroll tbody tr:nth-child(even){background:#f9faff}
+.detail-empty{margin:16px}
+.detail-close{min-width:32px}
+body:has(.detail-dialog[open]){overflow:hidden}
+@media(prefers-reduced-motion:reduce){.detail-dialog[open],.detail-dialog::backdrop{animation:none}#s3 .stat{transition:none}}
 </style>
 </head>
 <body data-page="hub">
@@ -156,9 +177,9 @@ main{width:100%;max-width:1440px;margin:0 auto}
 </section>
 <section class="pane" id="s3" hidden>
   <div class="strip">
-    <div class="stat"><b id="sPar">0</b><span>Parent SKUs (SAP)</span></div><div class="stat"><b id="sP">0</b><span>With DAM data</span></div>
-    <div class="stat"><b id="sU">0</b><span>Not in DAM (skipped)</span></div><div class="stat"><b id="sV">0</b><span>Variants (rows)</span></div>
-    <div class="stat"><b id="sI">0</b><span>Items to check</span></div></div>
+    <button class="stat" type="button" data-detail="sPar" aria-haspopup="dialog" aria-controls="summary-details"><b id="sPar">0</b><span>Parent SKUs (SAP)</span></button><button class="stat" type="button" data-detail="sP" aria-haspopup="dialog" aria-controls="summary-details"><b id="sP">0</b><span>With DAM data</span></button>
+    <button class="stat" type="button" data-detail="sU" aria-haspopup="dialog" aria-controls="summary-details"><b id="sU">0</b><span>Not in DAM (skipped)</span></button><button class="stat" type="button" data-detail="sV" aria-haspopup="dialog" aria-controls="summary-details"><b id="sV">0</b><span>Variants (rows)</span></button>
+    <button class="stat" type="button" data-detail="sI" aria-haspopup="dialog" aria-controls="summary-details"><b id="sI">0</b><span>Items to check</span></button></div>
   <div class="card"><h2>Report</h2><div id="rep"></div></div>
   <div class="card">
     <h2 id="preview-title">Matrixify preview</h2>
@@ -172,6 +193,15 @@ main{width:100%;max-width:1440px;margin:0 auto}
 </main>
 <div class="act"><div class="actin"><span id="actInfo"></span><button class="btn" id="actBtn"></button></div></div>
 </div>
+<dialog class="detail-dialog" id="summary-details" aria-labelledby="detail-title">
+  <div class="detail-head"><div><h2 id="detail-title"></h2><span class="hint" id="detail-count"></span></div>
+    <form method="dialog"><button type="submit" class="btn sm gh detail-close" aria-label="Close details" autofocus>×</button></form>
+  </div>
+  <div class="detail-scroll" tabindex="0" role="region" aria-labelledby="detail-title">
+    <table id="detail-table"></table><p class="hint detail-empty" id="detail-empty" hidden>No records in this category.</p>
+  </div>
+  <div class="detail-foot"><span id="detail-status" class="hint" role="status"></span><button type="button" class="btn sm" id="detail-copy">Copy all rows</button></div>
+</dialog>
 <script src="./shell.js"></script>
 <script>
 const HEADERS = ["Handle", "Title", "Body HTML", "Vendor", "Type", "Tags", "Tags Command", "Status", "Published", "Published Scope", "Image Src", "Image Command", "Image Position", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Variant Position", "Variant SKU", "Variant Barcodes", "Variant Image", "Variant Price", "Variant Compare At Price", "Variant Taxable", "Variant Inventory Tracker", "Variant Inventory Policy", "Variant Fulfillment Service", "Variant Requires Shipping", "Variant Shipping Profile", "Metafield: custom.plp_gender [single_line_text_field]", "Metafield: custom.seasons [single_line_text_field]", "Metafield: custom.theme [single_line_text_field]", "Metafield: custom.franchise [single_line_text_field]", "Metafield: custom.year [single_line_text_field]", "Metafield: custom.parent_sku [single_line_text_field]", "Metafield: custom.silhouette [single_line_text_field]", "Metafield: custom.color_sku [single_line_text_field]", "Metafield: custom.kids_gender [single_line_text_field]", "Metafield: custom.kids_age_group [single_line_text_field]", "Metafield: custom.mh2 [single_line_text_field]", "Metafield: custom.mh4 [single_line_text_field]", "Metafield: custom.ah1_silloute [single_line_text_field]", "Metafield: custom.ah2_sub_silloutte [single_line_text_field]", "Metafield: custom.masterstyle [single_line_text_field]", "Metafield: custom.product_subtitle [single_line_text_field]", "Metafield: custom.isreturnable [list.single_line_text_field]", "Metafield: custom.iscancellable [list.single_line_text_field]", "Metafield: custom.pdp_details [rich_text_field]"];
@@ -340,22 +370,84 @@ $("fD").onchange = e => { addDam([...e.target.files]); e.target.value = ""; };
   ["dragleave","drop"].forEach(ev => z.addEventListener(ev, e => { e.preventDefault(); z.classList.remove("over"); }));
   z.addEventListener("drop", e => e.dataTransfer.files.length && fn([...e.dataTransfer.files])); });
 
+/* ---- summary details ---- */
+const summaryDetails = {
+  sPar: {title: "Parent SKUs (SAP)", headers: ["Parent SKU", "Style-colour code", "SAP variants", "DAM match"], rows: []},
+  sP: {title: "Parent SKUs with DAM data", headers: ["Parent SKU", "Style-colour code", "DAM title", "Variants"], rows: []},
+  sU: {title: "Parent SKUs not in DAM", headers: ["Parent SKU", "Style-colour code", "SAP description"], rows: []},
+  sV: {title: "Variant rows", headers: ["Parent SKU", "Variant SKU", "Size", "Barcode"], rows: []},
+  sI: {title: "Items to check", headers: ["Issue", "Parent SKU", "Value or field"], rows: []}
+};
+const detailDialog = $("summary-details");
+let selectedDetail;
+document.querySelectorAll("#s3 [data-detail]").forEach(button => {
+  button.onclick = () => {
+    const detail = summaryDetails[button.dataset.detail];
+    selectedDetail = detail;
+    $("detail-title").textContent = detail.title;
+    $("detail-count").textContent = `${detail.rows.length.toLocaleString()} records`;
+    $("detail-status").textContent = "";
+    $("detail-empty").hidden = !!detail.rows.length;
+    $("detail-table").hidden = !detail.rows.length;
+    $("detail-copy").disabled = !detail.rows.length;
+    $("detail-table").innerHTML = "<thead><tr>" + detail.headers.map(h => `<th scope="col">${esc(h)}</th>`).join("") +
+      "</tr></thead><tbody>" + detail.rows.map(row => "<tr>" +
+        row.map(value => `<td>${esc(value ?? "")}</td>`).join("") + "</tr>").join("") + "</tbody>";
+    detailDialog.showModal();
+    detailDialog.querySelector(".detail-scroll").scrollTop = 0;
+  };
+});
+$("detail-copy").onclick = async () => {
+  const detail = selectedDetail;
+  const text = [detail.headers, ...detail.rows].map(row =>
+    row.map(value => String(value ?? "").replace(/[\t\r\n]+/g, " ")).join("\t")).join("\n");
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+    await navigator.clipboard.writeText(text);
+    if (selectedDetail === detail && detailDialog.open) $("detail-status").textContent = "Copied. Paste into Excel or a text editor.";
+  } catch {
+    if (selectedDetail !== detail || !detailDialog.open) return;
+    detailDialog.querySelector("textarea")?.remove();
+    const input = document.createElement("textarea");
+    input.setAttribute("aria-label", "Summary rows to copy");
+    input.value = text;
+    input.style.cssText = "width:100%;height:5em";
+    detailDialog.querySelector(".detail-scroll").prepend(input);
+    input.select();
+    let copied = false;
+    try { copied = document.execCommand("copy"); } catch {}
+    if (copied) {
+      input.remove();
+      $("detail-copy").focus();
+      $("detail-status").textContent = "Copied. Paste into Excel or a text editor.";
+    } else {
+      $("detail-status").textContent = "Press Ctrl+C or Cmd+C to copy the selected rows.";
+    }
+  }
+};
+detailDialog.addEventListener("close", () => detailDialog.querySelector("textarea")?.remove());
+
 /* ---- build ---- */
 function build() {
   const dam = new Map(), badFiles = [];
   DAMF.forEach(f => { const d = f.det; if (!d.id || !d.title) { badFiles.push(f.name); return; }
     f.rows.forEach(r => { const k = String(r[d.id]).trim().toUpperCase(); if (k && !dam.has(k)) dam.set(k, { title: String(r[d.title]).trim(), long: d.long ? String(r[d.long] ?? "").trim() : "", det: d.details ? String(r[d.details] ?? "") : "" }); }); });
   const groups = new Map(); OUT = [];
+  Object.values(summaryDetails).forEach(detail => { detail.rows = []; });
   SAP.forEach(r => { const k = r["parent sku"] || r["old article number"]; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
   const unmatched = [], stillBlank = [], oddSizes = new Set(), skuSeen = new Set(), bcSeen = new Set(), hSeen = new Set(), rep = [];
   let filled = 0, noBarcode = 0, dupSku = 0, dupBc = 0, dupH = 0, products = 0;
 
   for (const [parent, rows] of groups) {
-    const d = dam.get(rows[0]["old article number"].slice(0, 11).toUpperCase());
+    const style = rows[0]["old article number"].slice(0, 11).toUpperCase();
+    const d = dam.get(style);
+    summaryDetails.sPar.rows.push([parent, style, rows.length, d ? "Matched" : "Not in DAM"]);
+    if (!d) summaryDetails.sU.rows.push([parent, style, rows[0]["article description"]]);
+    else summaryDetails.sP.rows.push([parent, style, d.title, rows.length]);
     if (!d) { unmatched.push(`${parent} (${rows[0]["article description"]})`); continue; }
-    CLS.forEach(k => { const v = rows.map(r => r[k]).find(x => x); rows.forEach(r => { if (!r[k] && v) { r[k] = v; filled++; } }); if (!v) stillBlank.push(`${parent}: ${k.toUpperCase()}`); });
+    CLS.forEach(k => { const v = rows.map(r => r[k]).find(x => x); rows.forEach(r => { if (!r[k] && v) { r[k] = v; filled++; } }); if (!v) { stillBlank.push(`${parent}: ${k.toUpperCase()}`); summaryDetails.sI.rows.push(["Classification blank", parent, k.toUpperCase()]); } });
     const t = rows[0], title = d.title, handle = slug(title + " " + parent);
-    if (hSeen.has(handle)) dupH++; hSeen.add(handle); products++;
+    if (hSeen.has(handle)) { dupH++; summaryDetails.sI.rows.push(["Duplicate handle", parent, handle]); } hSeen.add(handle); products++;
     const body = d.long ? "<p>" + esc(d.long).replace(/\r?\n+/g, "<br>") + "</p>" : "";
     const lines = d.det.split(/\r?\n/).flatMap(l => l.split(" | ")).map(l => l.replace(/^\|\s*/, "").trim()).filter(Boolean);
     const pdp = lines.length ? "<ul>" + lines.map(l => "<li>" + esc(l) + "</li>").join("") + "</ul>" : "";
@@ -363,12 +455,15 @@ function build() {
     rows.map(r => ({ r, sz: size(r.size) })).sort((a, b) => sizeRank(a.sz) - sizeRank(b.sz)).forEach(({ r, sz }, i) => {
       if (isNaN(+sz) && !ORDER.includes(sz)) oddSizes.add(sz);
       const bc = r.barcode.replace(/^RS/i, "");
-      if (!bc) noBarcode++; else { if (bcSeen.has(bc)) dupBc++; bcSeen.add(bc); }
-      if (skuSeen.has(r["article code"])) dupSku++; skuSeen.add(r["article code"]);
+      if (!bc) { noBarcode++; summaryDetails.sI.rows.push(["Missing barcode", parent, r["article code"]]); }
+      else { if (bcSeen.has(bc)) { dupBc++; summaryDetails.sI.rows.push(["Duplicate barcode", parent, `${bc} · ${r["article code"]}`]); } bcSeen.add(bc); }
+      if (skuSeen.has(r["article code"])) { dupSku++; summaryDetails.sI.rows.push(["Duplicate variant SKU", parent, r["article code"]]); } skuSeen.add(r["article code"]);
       const c = { r, t, parent, title, handle, body, pdp, fr, sz, bc, i }, row = {};
       HEADERS.forEach((h, k) => { row[h] = evalMap(MAP[k], c); }); OUT.push(row);
+      summaryDetails.sV.rows.push([parent, row["Variant SKU"], row["Option2 Value"], row["Variant Barcodes"]]);
     });
   }
+  oddSizes.forEach(sz => summaryDetails.sI.rows.push(["Size kept as text", "", sz]));
   const issues = stillBlank.length + dupSku + dupBc + dupH + noBarcode + oddSizes.size;
   $("sPar").textContent = groups.size; $("sP").textContent = products; $("sU").textContent = unmatched.length; $("sV").textContent = OUT.length; $("sI").textContent = issues;
   const list = a => "<ul>" + a.slice(0, 12).map(x => `<li>${esc(x)}</li>`).join("") + (a.length > 12 ? `<li>and ${a.length - 12} more</li>` : "") + "</ul>";
