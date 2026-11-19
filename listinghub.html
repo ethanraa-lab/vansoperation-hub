@@ -242,7 +242,7 @@ body:has(.detail-dialog[open]){overflow:hidden}
   </div>
 </section>
 </main>
-<div class="act"><div class="actin"><span id="actInfo"></span><button class="btn" id="actBtn"></button></div></div>
+<div class="act"><div class="actin"><span id="actInfo"></span><div class="bar"><button class="btn sm gh" type="button" id="findVnImages" hidden>Find VN Images ↗</button><button class="btn" id="actBtn"></button></div></div></div>
 </div>
 <dialog class="detail-dialog" id="summary-details" aria-labelledby="detail-title">
   <div class="detail-head"><div><h2 id="detail-title"></h2><span class="hint" id="detail-count"></span></div>
@@ -373,7 +373,31 @@ function renderStep() {
 function goTo(n) { STEP = n; for (let i = 1; i <= 3; i++) $("s" + i).hidden = i !== n; if (n === 2) renderMap(); renderStep(); renderAct(); window.scrollTo(0, 0); }
 const parents = () => SAP ? new Set(SAP.map(r => r["parent sku"] || r["old article number"])).size : 0;
 const usable = () => SAP && DAMF.some(f => f.det && f.det.id && f.det.title);
+const imageWorkbenchUrl = "http://localhost:3000/";
+function listingImagePairs(rows) {
+  const pairs = new Map();
+  for (const row of rows) {
+    const handle = String(row.Handle ?? "");
+    const code = String(row["Metafield: custom.masterstyle [single_line_text_field]"] ?? "").trim().toUpperCase();
+    if (!handle.trim() || !/^VN[A-Z0-9]+$/.test(code)) continue;
+    pairs.set(JSON.stringify([handle, code]), {handle, code});
+  }
+  return [...pairs.values()];
+}
+$("findVnImages").onclick = () => {
+  const pairs = listingImagePairs(OUT);
+  if (!pairs.length) return;
+  const target = new URL(imageWorkbenchUrl);
+  target.hash = new URLSearchParams({"listing-images": JSON.stringify(pairs)}).toString();
+  window.open(target.href, "_blank", "noopener,noreferrer");
+};
+
 function renderAct() {
+  const imageButton = $("findVnImages");
+  imageButton.hidden = STEP !== 3;
+  const hasImages = STEP === 3 && listingImagePairs(OUT).length > 0;
+  imageButton.disabled = !hasImages;
+  imageButton.title = hasImages ? "" : "Map a VN code to masterstyle to use this action.";
   const b = $("actBtn"), i = $("actInfo");
   if (STEP === 1) { b.textContent = "Continue to mapping →"; b.disabled = !usable(); b.onclick = () => goTo(2);
     i.textContent = !SAP ? "Add the SAP file to begin" : !DAMF.length ? "Add at least one DAM file" : !usable() ? "Match the code and title columns of a DAM file" : `${parents()} parent SKUs · ${DAMF.length} DAM file${DAMF.length > 1 ? "s" : ""} ready`; }
