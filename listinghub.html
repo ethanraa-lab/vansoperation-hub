@@ -373,7 +373,7 @@ function renderStep() {
 function goTo(n) { STEP = n; for (let i = 1; i <= 3; i++) $("s" + i).hidden = i !== n; if (n === 2) renderMap(); renderStep(); renderAct(); window.scrollTo(0, 0); }
 const parents = () => SAP ? new Set(SAP.map(r => r["parent sku"] || r["old article number"])).size : 0;
 const usable = () => SAP && DAMF.some(f => f.det && f.det.id && f.det.title);
-const imageWorkbenchUrl = "http://localhost:3000/";
+const imageWorkbenchUrl = "./image-workbench.html";
 function listingImagePairs(rows) {
   const pairs = new Map();
   for (const row of rows) {
@@ -387,7 +387,7 @@ function listingImagePairs(rows) {
 $("findVnImages").onclick = () => {
   const pairs = listingImagePairs(OUT);
   if (!pairs.length) return;
-  const target = new URL(imageWorkbenchUrl);
+  const target = new URL(imageWorkbenchUrl, location.href);
   target.hash = new URLSearchParams({"listing-images": JSON.stringify(pairs)}).toString();
   window.open(target.href, "_blank", "noopener,noreferrer");
 };
