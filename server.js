@@ -15,7 +15,9 @@ const files = {
   '/listinghub.html': ['listinghub.html', 'text/html; charset=utf-8'],
   '/shell.js': ['shell.js', 'text/javascript; charset=utf-8'],
   '/shared.css': ['shared.css', 'text/css; charset=utf-8'],
-  '/image-workbench.html': ['public/index.html', 'text/html; charset=utf-8'],
+  '/image-workbench.html': ['vans_image.html', 'text/html; charset=utf-8'],
+  '/vans_image.html': ['vans_image.html', 'text/html; charset=utf-8'],
+  '/public/app.js': ['public/app.js', 'text/javascript; charset=utf-8'],
   '/app.js': ['public/app.js', 'text/javascript; charset=utf-8'],
   '/xlsx.js': ['node_modules/xlsx/dist/xlsx.full.min.js', 'text/javascript; charset=utf-8'],
 };
@@ -48,7 +50,7 @@ const server = http.createServer(async (req, res) => {
       json(result.status, result.error ? {error:result.error} : {ok:true}); return;
     }
     if (path === '/login' && ['GET','HEAD'].includes(req.method)) {
-      if (auth.valid(req)) { redirect('/image-workbench.html'); return; }
+      if (auth.valid(req)) { redirect('/vans_image.html'); return; }
       res.setHeader('Content-Type','text/html; charset=utf-8');
       res.end(req.method === 'HEAD' ? undefined : await readFile(new URL('public/login.html',import.meta.url))); return;
     }

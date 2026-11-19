@@ -373,7 +373,7 @@ function renderStep() {
 function goTo(n) { STEP = n; for (let i = 1; i <= 3; i++) $("s" + i).hidden = i !== n; if (n === 2) renderMap(); renderStep(); renderAct(); window.scrollTo(0, 0); }
 const parents = () => SAP ? new Set(SAP.map(r => r["parent sku"] || r["old article number"])).size : 0;
 const usable = () => SAP && DAMF.some(f => f.det && f.det.id && f.det.title);
-const imageWorkbenchUrl = "./image-workbench.html";
+const imageWorkbenchUrl = "./vans_image.html";
 function listingImagePairs(rows) {
   const pairs = new Map();
   for (const row of rows) {
