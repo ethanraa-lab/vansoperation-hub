@@ -128,20 +128,21 @@ tbody tr:hover td{background:#f9faff}
   </h2>
   <div class="tw">
     <table>
-      <thead><tr><th>Run time</th><th>Batch</th><th>Items</th><th>Status</th><th>Duration</th></tr></thead>
+      <thead><tr><th>Time (MYT)</th><th>Tool</th><th>Activity</th><th>Market</th><th>Items</th><th>Status</th><th>Duration</th></tr></thead>
       <tbody id="runs"></tbody>
     </table>
   </div>
+  <p><a class="btn" href="soon.html?p=history">View full run history</a></p>
 </main>
 <script src="shell.js"></script>
 <script>
 (function () {
   let flt = "all";
-  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   function render() {
-    document.getElementById("runs").innerHTML = Runs.get().filter(r => flt === "all" || !r.m || r.m === flt).slice(0, 5).map(r =>
-      `<tr><td class="mono">${esc(r.t)}</td><td><b>${esc(r.batch)}</b></td><td class="mono">${esc(r.items)}</td><td><span class="ok" ${r.status === "Completed" ? "" : 'style="color:var(--warn);background:var(--warnbg)"'}>${esc(r.status)}</span></td><td class="mono">${esc(r.dur)}</td></tr>`).join("");
+    Runs.render(document.getElementById("runs"), { market: flt, limit: 10 });
   }
+  window.addEventListener("pageshow", render);
+  window.addEventListener("storage", render);
   const btns = document.querySelectorAll(".seg button");
   btns.forEach(b => b.onclick = () => { btns.forEach(x => x.setAttribute("aria-pressed", x === b)); flt = b.dataset.f; render(); });
   render();
