@@ -188,16 +188,10 @@ function initialize() {
 
   function syncDownloads() {
     const { updates, creates, conflict } = pendingExports();
-    const confirmed = get("confirm").checked;
-    get("updates").disabled = !confirmed || !updates.length || conflict;
-    get("creates").disabled = !confirmed || !creates.length;
-    get("selection").textContent = conflict ? "Two updates target the same SG collection. Keep only one." :
+    get("updates").disabled = !updates.length || conflict;
+    get("creates").disabled = !creates.length;
+    get("selection").textContent = conflict ? "Two updates target the same SG collection. Select only one." :
       updates.length + " updates · " + creates.length + " creations selected";
-  }
-
-  function resetConfirmation() {
-    get("confirm").checked = false;
-    syncDownloads();
   }
 
   function element(tag, content) {
@@ -235,6 +229,7 @@ function initialize() {
       if (![handle, reference?.title, destination?.title, destinationFor(entry)?.handle,
         destinationFor(entry)?.title].some(value => lower(value).includes(search))) continue;
       const row = tbody.insertRow();
+      const selection = row.insertCell();
       const identity = row.insertCell();
       identity.append(element("strong", reference?.title || destination?.title || handle), element("div", handle));
       const badge = element("span", status);
@@ -246,36 +241,38 @@ function initialize() {
       const details = document.createElement("details");
       details.append(element("summary", "Compare MY and SG rules"));
       comparison.append(details);
-      const decisionCell = row.insertCell();
-      const decision = document.createElement("select");
-      decision.setAttribute("aria-label", "Decision for " + handle);
-      decision.add(new Option(decisions.keep, "keep"));
-      const blocked = reference ? exportBlock(reference, destination) : "";
-      if (reference && !blocked) {
-        const key = destination ? "update" : "create";
-        decision.add(new Option(decisions[key], key));
-      }
-      if (reference && !destination && destinations.size) decision.add(new Option(decisions.map, "map"));
-      decision.value = entry.decision;
-      decisionCell.append(decision);
-      const controls = document.createElement("div");
-      decisionCell.append(controls);
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      selection.append(checkbox);
+      const note = element("small", "");
+      comparison.append(note);
 
-      function refreshComparison() {
+      function updateRow() {
         const chosen = destinationFor(entry);
+        const blocked = reference ? exportBlock(reference, chosen) : "SG-only collection.";
+        checkbox.disabled = Boolean(blocked);
+        checkbox.checked = ["update", "create"].includes(entry.decision) || entry.applyMappedRules;
+        const action = chosen ? "update" : "create";
+        checkbox.setAttribute("aria-label", "Select " + handle + " for SG " + action);
+        note.textContent = blocked || (chosen ? "Eligible for SG updates" : "Eligible for SG creations");
+        note.className = "muted export-note";
         const pair = document.createElement("div");
         pair.className = "rule-pair";
         addRules(pair, "MY", reference);
         addRules(pair, "SG", chosen);
         details.replaceChildren(details.firstChild, pair);
+        syncDownloads();
       }
 
-      function renderMapping() {
-        controls.replaceChildren();
-        if (entry.decision !== "map") {
-          if (blocked) controls.append(element("small", blocked));
-          return;
-        }
+      checkbox.onchange = () => {
+        if (entry.target) entry.applyMappedRules = checkbox.checked;
+        else entry.decision = checkbox.checked ? (destination ? "update" : "create") : "keep";
+        syncDownloads();
+      };
+
+      if (reference && !destination && destinations.size) {
+        const mapping = document.createElement("details");
+        mapping.append(element("summary", "Map to an existing SG collection"));
         const target = document.createElement("select");
         target.setAttribute("aria-label", "SG mapping target for " + handle);
         target.add(new Option("Choose SG collection", ""));
@@ -283,45 +280,18 @@ function initialize() {
           target.add(new Option(collection.title + " (" + key + ")", key));
         }
         target.value = entry.target;
+        mapping.open = Boolean(entry.target);
         target.onchange = () => {
           entry.target = target.value;
+          entry.decision = entry.target ? "map" : "keep";
           entry.applyMappedRules = false;
-          renderMapping();
-          refreshComparison();
-          details.open = Boolean(entry.target);
-          const replacement = controls.querySelector("select");
-          replacement.focus();
-          resetConfirmation();
+          updateRow();
+          details.open = true;
         };
-        controls.append(target);
-        if (!entry.target) return;
-        const reason = exportBlock(reference, destinationFor(entry));
-        if (reason) {
-          controls.append(element("small", reason + " Mapping recorded in the comparison report."));
-        } else {
-          const label = element("label", "Also update the mapped SG rules");
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = entry.applyMappedRules;
-          checkbox.onchange = () => {
-            entry.applyMappedRules = checkbox.checked;
-            resetConfirmation();
-          };
-          label.prepend(checkbox);
-          controls.append(label);
-        }
+        mapping.append(target);
+        comparison.append(mapping);
       }
-
-      decision.onchange = () => {
-        entry.decision = decision.value;
-        entry.applyMappedRules = false;
-        renderMapping();
-        refreshComparison();
-        details.open = decision.value !== "keep";
-        resetConfirmation();
-      };
-      renderMapping();
-      refreshComparison();
+      updateRow();
     }
     if (!tbody.rows.length) {
       const cell = tbody.insertRow().insertCell();
@@ -361,7 +331,6 @@ function initialize() {
       const sg = readCollections(XLSX.read(sgData), "SG");
       entries = compareCollections(my, sg);
       destinations = sg;
-      get("confirm").checked = false;
       get("search").value = "";
       filter.value = "";
       get("counts").textContent = STATUSES.map(status =>
@@ -378,20 +347,47 @@ function initialize() {
   };
   get("search").oninput = render;
   filter.onchange = render;
-  get("confirm").onchange = syncDownloads;
+  const dialog = get("export-preview");
+  get("close-preview").onclick = () => dialog.close();
 
-  function download(action) {
+  function preview(action) {
     const { updates, creates, conflict } = pendingExports();
-    if (!get("confirm").checked || (action === "update" && conflict)) return;
+    if (action === "update" && conflict) return;
     const chosen = (action === "update" ? updates : creates)
       .map(entry => ({ ...entry, destination: destinationFor(entry) }));
     if (!chosen.length) return;
-    const book = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(workbookRows(chosen, action)), "Collections");
-    XLSX.writeFile(book, "Vans-SG-Collections-" + (action === "update" ? "Updates" : "Creations") + ".xlsx");
+    const rows = workbookRows(chosen, action);
+    const kind = action === "update" ? "Updates" : "Creations";
+    const filename = "Vans-SG-Collections-" + kind + ".xlsx";
+    get("preview-title").textContent = "Preview SG " + kind.toLowerCase();
+    get("preview-description").textContent = filename + " · " + chosen.length + " collections · " +
+      (rows.length - 1) + " data rows";
+    const table = get("preview-rows");
+    const head = document.createElement("thead");
+    const header = head.insertRow();
+    for (const value of rows[0]) {
+      const cell = element("th", value);
+      cell.scope = "col";
+      header.append(cell);
+    }
+    const body = document.createElement("tbody");
+    for (const values of rows.slice(1)) {
+      const row = body.insertRow();
+      for (const value of values) row.insertCell().textContent = typeof value === "boolean" ?
+        String(value).toUpperCase() : value;
+    }
+    table.replaceChildren(head, body);
+    get("download-preview").onclick = () => {
+      const book = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "Collections");
+      XLSX.writeFile(book, filename);
+      dialog.close();
+    };
+    dialog.showModal();
   }
-  get("updates").onclick = () => download("update");
-  get("creates").onclick = () => download("create");
+
+  get("updates").onclick = () => preview("update");
+  get("creates").onclick = () => preview("create");
   get("report").onclick = () => {
     const summary = [["MY Handle", "MY Title", "SG Handle", "SG Title", "SG ID", "Comparison", "Decision", "Export action"]];
     const rules = [["Review Handle", "Market", "Collection Handle", "Source ID", "Source Type", ...RULE_COLUMNS]];
