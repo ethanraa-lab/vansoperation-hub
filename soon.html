@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dotcom Operations Hub</title>
   <link rel="stylesheet" href="./shared.css">
+  <style>
+    .history-table { overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+    .history-table table { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .history-table th, .history-table td { padding: 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    .history-table th { background: var(--canvas); }
+  </style>
 </head>
 <body>
   <aside id="side"></aside>
@@ -15,7 +21,11 @@
         <p class="sub" id="page-description"></p>
       </div>
     </header>
-    <p class="note">This module is coming soon.</p>
+    <p class="note" id="placeholder">This module is coming soon.</p>
+    <section id="history" hidden>
+      <p>Activity recorded in this browser.</p>
+      <div class="history-table"><table><thead><tr><th>Time (MYT)</th><th>Tool</th><th>Activity</th><th>Market</th><th>Items</th><th>Status</th><th>Duration</th></tr></thead><tbody id="history-rows"></tbody></table></div>
+    </section>
   </main>
   <script>
     const requested = new URLSearchParams(location.search).get("p");
@@ -25,6 +35,14 @@
   </script>
   <script src="./shell.js"></script>
   <script>
+    if (document.body.dataset.page === "history") {
+      document.getElementById("placeholder").hidden = true;
+      document.getElementById("history").hidden = false;
+      const renderHistory = () => Runs.render(document.getElementById("history-rows"));
+      window.addEventListener("pageshow", renderHistory);
+      window.addEventListener("storage", renderHistory);
+      renderHistory();
+    }
     const page = window.PAGES[document.body.dataset.page];
     if (page) {
       document.getElementById("page-title").textContent = page.label;
