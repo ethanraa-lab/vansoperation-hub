@@ -43,21 +43,31 @@
   });
   let storageUnavailable = false;
 
+  function duration(seconds) {
+    if (seconds == null) return "—";
+    if (seconds < 1) return "<1 sec";
+    if (seconds < 60) return Math.round(seconds) + " sec";
+    return Math.floor(seconds / 60) + " min " + Math.floor(seconds % 60) + " sec";
+  }
+
   window.Runs = {
     get() {
       try {
         const records = JSON.parse(localStorage.getItem(historyKey) || "[]");
-        return Array.isArray(records) ? records.filter(record => record && typeof record.activity === "string") : [];
+        return Array.isArray(records) ? records.filter(record => record && typeof record.activity === "string").map(record => ({
+          ...record, t: Number.isFinite(record.time) ? dateFormat.format(record.time) : "—",
+          batch: record.activity, items: record.items ?? "—", m: record.market || "", dur: duration(record.seconds)
+        })) : [];
       } catch {
         storageUnavailable = true;
         return [];
       }
     },
-    add(activity, { items, market = "", status = "Completed", started } = {}) {
+    add(activity, { items, market = "", status = "Completed", started, file = "" } = {}) {
       const now = Date.now();
       const records = this.get();
       records.unshift({
-        time: now, tool: P[cur]?.label || "Dotcom Operations Hub", activity, items, market, status,
+        time: now, tool: P[cur]?.label || "Dotcom Operations Hub", activity, items, market, status, file,
         seconds: started ? Math.max(0, (now - started) / 1000) : null
       });
       try {
@@ -72,18 +82,14 @@
       tbody.replaceChildren();
       for (const record of records) {
         const row = tbody.insertRow();
-        const seconds = record.seconds;
-        const duration = seconds == null ? "—" : seconds < 1 ? "<1 sec" :
-          seconds < 60 ? Math.round(seconds) + " sec" : Math.floor(seconds / 60) + " min " + Math.floor(seconds % 60) + " sec";
-        const time = Number.isFinite(record.time) ? dateFormat.format(record.time) : "—";
-        for (const value of [time, record.tool, record.activity, record.market || "—",
-          record.items ?? "—", record.status, duration]) {
+        for (const value of [record.t, record.tool || "—", record.activity, record.file || "—",
+          record.market || "—", record.items, record.status || "—", record.dur]) {
           row.insertCell().textContent = value;
         }
       }
       if (!records.length) {
         const cell = tbody.insertRow().insertCell();
-        cell.colSpan = 7;
+        cell.colSpan = 8;
         cell.textContent = storageUnavailable ? "Activity storage is unavailable in this browser." :
           market === "all" ? "No activity yet. Open a tool to get started." : "No activity for this market yet.";
       }
