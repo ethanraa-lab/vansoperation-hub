@@ -254,7 +254,10 @@ function initialize() {
         checkbox.checked = ["update", "create"].includes(entry.decision) || entry.applyMappedRules;
         const action = chosen ? "update" : "create";
         checkbox.setAttribute("aria-label", "Select " + handle + " for SG " + action);
-        note.textContent = blocked || (chosen ? "Eligible for SG updates" : "Eligible for SG creations");
+        note.textContent = blocked || (chosen ? "Tick to update the SG collection." : "Tick to create this MY handle in SG.");
+        if (entry.target && blocked && !exportBlock(reference)) {
+          note.textContent += " Choose Create as a separate SG collection below to use the MY handle.";
+        }
         note.className = "muted export-note";
         const pair = document.createElement("div");
         pair.className = "rule-pair";
@@ -272,10 +275,10 @@ function initialize() {
 
       if (reference && !destination && destinations.size) {
         const mapping = document.createElement("details");
-        mapping.append(element("summary", "Map to an existing SG collection"));
+        mapping.append(element("summary", "Create separately or map to an existing SG collection"));
         const target = document.createElement("select");
         target.setAttribute("aria-label", "SG mapping target for " + handle);
-        target.add(new Option("Choose SG collection", ""));
+        target.add(new Option("Create as a separate SG collection", ""));
         for (const [key, collection] of [...destinations].sort(([a], [b]) => a.localeCompare(b))) {
           target.add(new Option(collection.title + " (" + key + ")", key));
         }
@@ -287,6 +290,7 @@ function initialize() {
           entry.applyMappedRules = false;
           updateRow();
           details.open = true;
+          if (!entry.target && !checkbox.disabled) checkbox.focus();
         };
         mapping.append(target);
         comparison.append(mapping);
