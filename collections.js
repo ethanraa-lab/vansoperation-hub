@@ -321,6 +321,7 @@ function initialize() {
     const sgFile = get("sg-file").files[0];
     get("compare").disabled = true;
     get("results").hidden = true;
+    const started = Date.now();
     describe("Reading exports…");
     try {
       if (typeof XLSX === "undefined") throw new Error("The Excel library could not load. Connect to the internet and reopen the page.");
@@ -334,6 +335,7 @@ function initialize() {
       const my = readCollections(XLSX.read(myData), "MY");
       const sg = readCollections(XLSX.read(sgData), "SG");
       entries = compareCollections(my, sg);
+      window.Runs?.add("Compared MY and SG collections", { items: entries.length, market: "MY/SG", started });
       destinations = sg;
       get("search").value = "";
       filter.value = "";
@@ -344,7 +346,10 @@ function initialize() {
       describe("");
       render();
     } catch (error) {
-      if (current === revision) describe(error.message || "Could not read the exports.", true);
+      if (current === revision) {
+        describe(error.message || "Could not read the exports.", true);
+        window.Runs?.add("Collection comparison failed", { market: "MY/SG", status: "Failed", started });
+      }
     } finally {
       get("compare").disabled = false;
     }
@@ -385,9 +390,11 @@ function initialize() {
       const book = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "Collections");
       XLSX.writeFile(book, filename);
+      window.Runs?.add("Downloaded SG collection " + kind.toLowerCase(), { items: chosen.length, market: "SG" });
       dialog.close();
     };
     dialog.showModal();
+    window.Runs?.add("Previewed SG collection " + kind.toLowerCase(), { items: chosen.length, market: "SG" });
   }
 
   get("updates").onclick = () => preview("update");
@@ -414,6 +421,7 @@ function initialize() {
       XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), name);
     }
     XLSX.writeFile(book, "Vans-MY-SG-Collection-Review.xlsx");
+    window.Runs?.add("Downloaded collection comparison report", { items: entries.length, market: "MY/SG" });
   };
 }
 
