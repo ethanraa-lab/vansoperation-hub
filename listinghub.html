@@ -359,10 +359,10 @@ $("mapT").addEventListener("input", e => { if (e.target.type === "text") MAP[+e.
 const PKEY = "vlh-preset-v1", pm = t => { $("pMsg").textContent = t; };
 function loadMap(a) { if (!Array.isArray(a)) return false; const d = defMap(); a.forEach(x => { const i = HEADERS.indexOf(x.h); if (i > -1) d[i] = { h: x.h, t: x.t, v: x.v }; }); MAP = d; return true; }
 try { const sv = localStorage.getItem(PKEY); if (sv) loadMap(JSON.parse(sv)); } catch (e) {}
-$("pSave").onclick = () => { try { localStorage.setItem(PKEY, JSON.stringify(MAP)); pm("Preset saved in this browser."); } catch (e) { pm("Could not save: browser storage is blocked."); } };
+$("pSave").onclick = () => { try { localStorage.setItem(PKEY, JSON.stringify(MAP)); pm("Preset saved in this browser."); window.Runs?.add("Saved listing mapping preset"); } catch (e) { pm("Could not save: browser storage is blocked."); } };
 $("pExp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(MAP, null, 1)], { type: "application/json" })); a.download = "listing-hub-preset.json"; a.click(); };
-$("pImp").onchange = async e => { try { if (loadMap(JSON.parse(await e.target.files[0].text()))) { renderMap(); pm("Preset imported."); } } catch (x) { pm("This is not a valid preset file."); } e.target.value = ""; };
-$("pReset").onclick = () => { MAP = defMap(); renderMap(); pm("Reset to default."); };
+$("pImp").onchange = async e => { try { if (loadMap(JSON.parse(await e.target.files[0].text()))) { renderMap(); pm("Preset imported."); window.Runs?.add("Imported listing mapping preset"); } } catch (x) { pm("This is not a valid preset file."); } e.target.value = ""; };
+$("pReset").onclick = () => { MAP = defMap(); renderMap(); pm("Reset to default."); window.Runs?.add("Reset listing mapping preset"); };
 
 /* ---- steps ---- */
 function renderStep() {
@@ -389,6 +389,7 @@ $("findVnImages").onclick = () => {
   if (!pairs.length) return;
   const target = new URL(imageWorkbenchUrl, location.href);
   target.hash = new URLSearchParams({"listing-images": JSON.stringify(pairs)}).toString();
+  window.Runs?.add("Sent products to Image Workbench", { items: pairs.length });
   window.location.assign(target.href);
 };
 
@@ -447,10 +448,13 @@ async function loadSap(f) {
   SAPKEYS = new Set(SAP.map(r => r["old article number"].slice(0, 11).toUpperCase()));
   $("eS").innerHTML = miss.length ? `<div class="msg bad">Missing SAP columns: ${esc(miss.join(", "))}</div>` : "";
   OUT = []; detectAll(); refresh();
+  window.Runs?.add("Loaded SAP workbook", { items: raw.length });
 }
 async function addDam(list) {
+  const previousCount = DAMF.length;
   for (const f of list) { const rows = await readSheet(f); if (rows.length) DAMF.push({ name: f.name, rows, det: null }); }
   OUT = []; detectAll(); refresh();
+  if (DAMF.length > previousCount) window.Runs?.add("Loaded DAM workbooks", { items: DAMF.length - previousCount });
 }
 $("fS").onchange = e => { if (e.target.files[0]) loadSap(e.target.files[0]); e.target.value = ""; };
 $("fD").onchange = e => { addDam([...e.target.files]); e.target.value = ""; };
@@ -608,12 +612,24 @@ function renderPreview(offset) {
 }
 $("preview-prev").onclick = () => renderPreview(previewOffset - PREVIEW_PAGE_SIZE);
 $("preview-next").onclick = () => renderPreview(previewOffset + PREVIEW_PAGE_SIZE);
-function run() { if (!SAP || !DAMF.length) return; build(); goTo(3); }
+function run() {
+  if (!SAP || !DAMF.length) return;
+  const started = Date.now();
+  try {
+    build();
+    goTo(3);
+    window.Runs?.add("Ran listing mapping and preview", { items: OUT.length, started });
+  } catch (error) {
+    window.Runs?.add("Listing mapping failed", { status: "Failed", started });
+    throw error;
+  }
+}
 
 function download() {
   const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...OUT.map(r => HEADERS.map(h => r[h]))]);
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Products");
   XLSX.writeFile(wb, `Vans_New_Product_Listing_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  window.Runs?.add("Downloaded Matrixify listing workbook", { items: OUT.length });
 }
 refresh(); goTo(1);
 </script>
