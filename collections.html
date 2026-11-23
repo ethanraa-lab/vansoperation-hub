@@ -11,8 +11,43 @@
     aside { overflow-y: auto; }
     h2 { margin: 0 0 8px; font-size: 18px; }
     .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
-    .uploads { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 16px 0; }
-    .upload { display: grid; gap: 8px; padding: 14px; background: var(--canvas); border-radius: 10px; font-weight: 700; }
+    .upload-panel { padding: 0; overflow: hidden; }
+    .upload-header {
+      padding: 24px clamp(18px, 3vw, 30px);
+      background: radial-gradient(ellipse at top right, #343b85, transparent 70%), #111526;
+      color: #fff;
+    }
+    .upload-header h2 { font-size: clamp(20px, 2.2vw, 26px); }
+    .upload-header p { color: #d4daf2; margin: 0; max-width: 66ch; }
+    #compare-form { padding: clamp(16px, 3vw, 24px); }
+    .uploads { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 14px; }
+    .upload {
+      --market: #5541be;
+      --tint-market: #efebff;
+      display: grid;
+      gap: 7px;
+      padding: 16px;
+      min-width: 0;
+      border: 1px dashed #c6c8df;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--tint-market), #fff 78%);
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .upload.sg { --market: #066f66; --tint-market: #e2f7f3; }
+    .upload:hover, .upload:focus-within { border-color: var(--market); box-shadow: 0 0 0 3px var(--tint-market); }
+    .upload:has(input:valid) { border: 1px solid var(--market); }
+    .market-code { justify-self: start; color: var(--market); background: var(--tint-market); border-radius: 8px; padding: 4px 9px; font-weight: 800; }
+    .market-name { font-weight: 800; font-size: 16px; }
+    .market-role { color: var(--muted); font-size: 13px; }
+    .upload input { width: 100%; min-width: 0; color: var(--text); margin-top: 4px; }
+    .upload input::file-selector-button {
+      font: inherit; font-weight: 750; color: var(--market); background: white;
+      border: 1px solid #d9ddeb; border-radius: 8px; padding: 7px 10px; margin-right: 8px; cursor: pointer;
+    }
+    .upload input::file-selector-button:hover { background: var(--tint-market); }
+    .market-arrow { color: var(--muted); font-size: 20px; text-align: center; }
+    .upload-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
+    .upload-footer p { margin: 0; }
     input, select { font: inherit; max-width: 100%; }
     select, input[type="search"] { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: white; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -36,7 +71,7 @@
     .status[data-status="Different rules"], .status[data-status="MY only"] { background: var(--accent-soft); color: #263db0; }
     .status[data-status="Review"] { background: #fff1d6; color: #794900; }
     @media (max-width: 900px) { body { grid-template-columns: minmax(0, 1fr); } }
-    @media (max-width: 600px) { .uploads { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .uploads { grid-template-columns: minmax(0, 1fr); } .market-arrow { display: none; } }
   </style>
 </head>
 <body data-page="collections">
@@ -49,16 +84,31 @@
       </div>
       <a class="btn secondary" href="index.html">Dashboard</a>
     </header>
-    <section class="panel" aria-labelledby="upload-title">
-      <h2 id="upload-title">1. Upload Matrixify exports</h2>
-      <p class="muted">Use the current Collections sheet with Sources &amp; Conditions included. Export the same collection scope in both stores so missing handles are meaningful.</p>
+    <section class="panel upload-panel" aria-labelledby="upload-title">
+      <header class="upload-header">
+        <h2 id="upload-title">1. Upload Matrixify exports</h2>
+        <p>Use the Collections sheet with Sources &amp; Conditions. Export the same collection scope from both stores.</p>
+      </header>
       <form id="compare-form">
         <div class="uploads">
-          <label class="upload">Vans MY · Reference <input id="my-file" type="file" accept=".xlsx" required></label>
-          <label class="upload">Vans SG · Destination <input id="sg-file" type="file" accept=".xlsx" required></label>
+          <label class="upload">
+            <span class="market-code" aria-hidden="true">MY</span>
+            <span class="market-name">Vans Malaysia</span>
+            <span class="market-role">Reference · rules to compare</span>
+            <input id="my-file" type="file" accept=".xlsx" required>
+          </label>
+          <span class="market-arrow" aria-hidden="true">→</span>
+          <label class="upload sg">
+            <span class="market-code" aria-hidden="true">SG</span>
+            <span class="market-name">Vans Singapore</span>
+            <span class="market-role">Destination · collections to review</span>
+            <input id="sg-file" type="file" accept=".xlsx" required>
+          </label>
         </div>
-        <button class="btn" id="compare" type="submit">Compare collections</button>
-        <p id="message" role="status" hidden></p>
+        <div class="upload-footer">
+          <button class="btn" id="compare" type="submit">Compare collections <span aria-hidden="true">→</span></button>
+          <p id="message" role="status" hidden></p>
+        </div>
       </form>
     </section>
     <section class="panel" id="results" hidden aria-labelledby="results-title">
