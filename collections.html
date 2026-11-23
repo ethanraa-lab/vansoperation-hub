@@ -13,41 +13,53 @@
     .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
     .upload-panel { padding: 0; overflow: hidden; }
     .upload-header {
+      position: relative;
       padding: 24px clamp(18px, 3vw, 30px);
-      background: radial-gradient(ellipse at top right, #343b85, transparent 70%), #111526;
-      color: #fff;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    .upload-header::after {
+      content: "";
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: 24%;
+      background: conic-gradient(#10141f 25%, #fff 0 50%, #10141f 0 75%, #fff 0) 0 0 / 18px 18px;
+      mask-image: linear-gradient(to right, transparent, #000);
+      opacity: .13;
+      pointer-events: none;
     }
     .upload-header h2 { font-size: clamp(20px, 2.2vw, 26px); }
-    .upload-header p { color: #d4daf2; margin: 0; max-width: 66ch; }
+    .upload-header p { color: var(--muted); margin: 0; max-width: 64ch; }
     #compare-form { padding: clamp(16px, 3vw, 24px); }
-    .uploads { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 14px; }
+    .uploads {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      border: 1px solid var(--line); border-radius: 12px; background: #f8f9fb;
+    }
     .upload {
-      --market: #5541be;
-      --tint-market: #efebff;
-      display: grid;
-      gap: 7px;
-      padding: 16px;
-      min-width: 0;
-      border: 1px dashed #c6c8df;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--tint-market), #fff 78%);
-      transition: border-color .18s, box-shadow .18s;
+      display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center;
+      column-gap: 12px; row-gap: 4px; padding: 16px; min-width: 0;
+      transition: background .18s;
     }
-    .upload.sg { --market: #066f66; --tint-market: #e2f7f3; }
-    .upload:hover, .upload:focus-within { border-color: var(--market); box-shadow: 0 0 0 3px var(--tint-market); }
-    .upload:has(input:valid) { border: 1px solid var(--market); }
-    .market-code { justify-self: start; color: var(--market); background: var(--tint-market); border-radius: 8px; padding: 4px 9px; font-weight: 800; }
+    .upload.sg { border-inline-start: 1px solid var(--line); }
+    .upload:hover, .upload:focus-within { background: #eef1f6; }
+    .upload:has(input:valid) { background: #edf7f0; }
+    .market-code {
+      grid-row: span 2; align-self: start; display: grid; place-items: center;
+      width: 42px; height: 42px; color: #fff; background: #151922;
+      border-radius: 8px; font-weight: 800; letter-spacing: .05em;
+    }
+    .upload:has(input:valid) .market-code { background: #14663c; }
     .market-name { font-weight: 800; font-size: 16px; }
-    .market-role { color: var(--muted); font-size: 13px; }
-    .upload input { width: 100%; min-width: 0; color: var(--text); margin-top: 4px; }
+    .market-role { grid-column: 2; color: var(--muted); font-size: 13px; }
+    .upload input { grid-column: 1 / -1; width: 100%; min-width: 0; color: var(--text); margin-top: 10px; }
     .upload input::file-selector-button {
-      font: inherit; font-weight: 750; color: var(--market); background: white;
-      border: 1px solid #d9ddeb; border-radius: 8px; padding: 7px 10px; margin-right: 8px; cursor: pointer;
+      font: inherit; font-weight: 750; color: #151922; background: white;
+      border: 1px solid #cdd3de; border-radius: 7px; padding: 7px 10px; margin-right: 8px; cursor: pointer;
     }
-    .upload input::file-selector-button:hover { background: var(--tint-market); }
-    .market-arrow { color: var(--muted); font-size: 20px; text-align: center; }
+    .upload input::file-selector-button:hover { background: #e8ecf2; }
     .upload-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
     .upload-footer p { margin: 0; }
+    #compare { background: #151922; }
     input, select { font: inherit; max-width: 100%; }
     select, input[type="search"] { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: white; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -71,7 +83,7 @@
     .status[data-status="Different rules"], .status[data-status="MY only"] { background: var(--accent-soft); color: #263db0; }
     .status[data-status="Review"] { background: #fff1d6; color: #794900; }
     @media (max-width: 900px) { body { grid-template-columns: minmax(0, 1fr); } }
-    @media (max-width: 600px) { .uploads { grid-template-columns: minmax(0, 1fr); } .market-arrow { display: none; } }
+    @media (max-width: 600px) { .uploads { grid-template-columns: minmax(0, 1fr); } .upload.sg { border-inline-start: 0; border-top: 1px solid var(--line); } }
   </style>
 </head>
 <body data-page="collections">
@@ -97,7 +109,6 @@
             <span class="market-role">Reference · rules to compare</span>
             <input id="my-file" type="file" accept=".xlsx" required>
           </label>
-          <span class="market-arrow" aria-hidden="true">→</span>
           <label class="upload sg">
             <span class="market-code" aria-hidden="true">SG</span>
             <span class="market-name">Vans Singapore</span>
