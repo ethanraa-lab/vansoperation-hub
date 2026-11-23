@@ -80,10 +80,16 @@
     .rule-list { margin: 4px 0 10px; padding-left: 18px; }
     .status { display: inline-block; white-space: nowrap; font-weight: 700; border-radius: 20px; padding: 3px 9px; background: var(--canvas); }
     .status[data-status="Same rules"] { background: var(--ok-bg); color: var(--ok); }
-    .status[data-status="Different rules"], .status[data-status="MY only"] { background: var(--accent-soft); color: #263db0; }
+    .status[data-status="Different rules"] { background: #fde8e7; color: #a7231b; }
+    .status[data-status="MY only"] { background: var(--accent-soft); color: #263db0; }
     .status[data-status="Review"] { background: #fff1d6; color: #794900; }
     @media (max-width: 900px) { body { grid-template-columns: minmax(0, 1fr); } }
     @media (max-width: 600px) { .uploads { grid-template-columns: minmax(0, 1fr); } .upload.sg { border-inline-start: 0; border-top: 1px solid var(--line); } }
+    .export-note { display: block; margin: 6px 0; }
+    .export-preview { width: min(1040px, calc(100% - 28px)); max-width: none; padding: 20px; border: 1px solid var(--line); border-radius: 16px; color: var(--text); }
+    .export-preview::backdrop { background: #111526aa; }
+    .export-preview .table-wrap { max-height: 54vh; border: 1px solid var(--line); border-radius: 8px; }
+    .export-preview td { min-width: 105px; max-width: 270px; }
   </style>
 </head>
 <body data-page="collections">
@@ -125,28 +131,38 @@
     <section class="panel" id="results" hidden aria-labelledby="results-title">
       <h2 id="results-title">2. Compare and choose what to do</h2>
       <p id="counts" class="muted"></p>
-      <p class="muted">Each row starts on Keep. Choose Update SG rules for an existing match or Create in SG for a new handle. If the same collection already exists under a different handle, choose Map to existing SG and select the target. Mapping alone records the link in the comparison report.</p>
+      <p class="muted">Tick the collections you want to export. Existing SG collections go to Updates, and new SG handles go to Creations. Open the rule comparison to review each collection before selecting it.</p>
       <div class="actions">
         <input id="search" type="search" placeholder="Search title or handle" aria-label="Search title or handle">
         <select id="filter" aria-label="Filter by status"><option value="">All comparisons</option></select>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th scope="col">Collection</th><th scope="col">Comparison</th><th scope="col">Details</th><th scope="col">Your decision</th></tr></thead>
+          <thead><tr><th scope="col">Select</th><th scope="col">Collection</th><th scope="col">Comparison</th><th scope="col">Details</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
       <h2>3. Download your selections</h2>
       <p class="muted">Updates replace the selected SG source rules. Creations start unpublished on the Online Store. Review the SG catalog and metafield values before importing.</p>
-      <p><label><input id="confirm" type="checkbox"> I reviewed the selected changes for Vans SG.</label></p>
       <div class="actions">
-        <button class="btn" id="updates" type="button" disabled>Download SG updates</button>
-        <button class="btn secondary" id="creates" type="button" disabled>Download SG creations</button>
+        <button class="btn" id="updates" type="button" disabled>Preview SG updates</button>
+        <button class="btn secondary" id="creates" type="button" disabled>Preview SG creations</button>
         <button class="btn secondary" id="report" type="button">Download comparison report</button>
         <span class="muted" id="selection" aria-live="polite"></span>
       </div>
     </section>
   </main>
+  <dialog class="export-preview" id="export-preview" aria-labelledby="preview-title">
+    <h2 id="preview-title">Preview export</h2>
+    <p id="preview-description" class="muted"></p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Excel rows to be exported">
+      <table id="preview-rows"></table>
+    </div>
+    <div class="actions">
+      <button class="btn secondary" id="close-preview" type="button" autofocus>Back</button>
+      <button class="btn" id="download-preview" type="button">Download Excel</button>
+    </div>
+  </dialog>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="shell.js"></script>
   <script src="collections.js"></script>
