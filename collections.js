@@ -7,7 +7,7 @@ const RULE_COLUMNS = [
   "Condition: Relation", "Condition: Value", "Condition: Match"
 ];
 const REQUIRED = ["ID", "Handle", "Title", SOURCE_ID, SOURCE_TYPE, ...RULE_COLUMNS];
-const STATUSES = ["Matched", "Different rules", "Missing in SG", "Review", "SG only"];
+const STATUSES = ["Same rules", "Different rules", "MY only", "SG only"];
 const clean = value => String(value ?? "").trim();
 const lower = value => clean(value).toLowerCase();
 const numericId = value => /^[1-9]\d*$/.test(value);
@@ -49,6 +49,11 @@ function readCollections(workbook, market) {
     const collection = byHandle.get(handle);
     if (collection.id !== row.ID) throw new Error(market + " repeats handle " + handle + " with different IDs.");
     if (!collection.title) collection.title = row.Title;
+    if (!collection.metadata || lower(row["Top Row"]) === "true") {
+      collection.metadata = Object.fromEntries(Object.entries(row).filter(([name]) =>
+        name.startsWith("Metafield:") || ["Title", "Sort Order", "Template Suffix",
+          "Products Count", "Published: Online Store"].includes(name)));
+    }
 
     const rule = RULE_COLUMNS.map(name => row[name]);
     if (!row[SOURCE_ID] && !row[SOURCE_TYPE] && !rule.some(Boolean)) continue;
@@ -97,45 +102,36 @@ function reviewReason(collection) {
   return "";
 }
 
+function exportBlock(reference, destination) {
+  const problem = reviewReason(reference);
+  if (problem) return "MY: " + problem;
+  if (!destination) return reference.title ? "" : "The MY title is missing.";
+  const destinationProblem = reviewReason(destination);
+  if (destinationProblem) return "SG: " + destinationProblem;
+  const [mySource] = reference.sources.values();
+  const [sgSource] = destination.sources.values();
+  if (!numericId(destination.id) || !numericId(sgSource.id)) return "SG collection and source IDs are required.";
+  if (lower(mySource.type) !== lower(sgSource.type)) return "The source types differ.";
+  if (signature(reference) === signature(destination)) return "The collection rules already match.";
+  return "";
+}
+
 function compareCollections(my, sg) {
-  const entries = [];
-  for (const handle of new Set([...my.keys(), ...sg.keys()])) {
+  return [...new Set([...my.keys(), ...sg.keys()])].sort().map(handle => {
     const reference = my.get(handle);
     const destination = sg.get(handle);
-    let status = destination ? "Different rules" : "Missing in SG";
-    let note = "";
-    let action = "";
-    if (!reference) {
-      status = "SG only";
-    } else {
-      const mySource = [...reference.sources.values()][0];
-      const sgSource = destination && [...destination.sources.values()][0];
-      const equivalent = destination && signature(reference) === signature(destination);
-      note = reviewReason(reference) || (destination && reviewReason(destination)) || "";
-      if (!note && equivalent) {
-        status = "Matched";
-      } else {
-        if (!note && destination && lower(mySource.type) !== lower(sgSource.type)) {
-          note = "MY and SG use different source types.";
-        }
-        if (!note && destination && (!numericId(destination.id) || !numericId(sgSource.id))) {
-          note = "SG requires valid collection and source IDs for updates.";
-        }
-        if (!note && !destination && !reference.title) note = "MY title is missing.";
-        if (note) {
-          status = "Review";
-          if (!destination) note = "Missing in SG. " + note;
-        } else {
-          action = destination ? "update" : "create";
-        }
-      }
-      if (destination && reference.title !== destination.title) {
-        note += (note ? " " : "") + "MY and SG titles differ.";
-      }
-    }
-    entries.push({ handle, reference, destination, status, note, action });
-  }
-  return entries.sort((a, b) => a.handle.localeCompare(b.handle));
+    const status = !reference ? "SG only" : !destination ? "MY only" :
+      signature(reference) === signature(destination) ? "Same rules" : "Different rules";
+    return { handle, reference, destination, status, decision: "keep", target: "", applyMappedRules: false };
+  });
+}
+
+function metadataDifferences(reference, destination) {
+  const left = reference?.metadata ?? {};
+  const right = destination?.metadata ?? {};
+  return [...new Set([...Object.keys(left), ...Object.keys(right)])].sort()
+    .filter(key => (left[key] || "") !== (right[key] || ""))
+    .map(key => [key, left[key] || "", right[key] || ""]);
 }
 
 function workbookRows(entries, action) {
@@ -160,11 +156,11 @@ function workbookRows(entries, action) {
 function initialize() {
   const get = id => document.getElementById(id);
   const message = get("message");
-  const selected = new Set();
-  let entries = [];
-  let revision = 0;
   const filter = get("filter");
-  filter.add(new Option("All statuses", ""));
+  const decisions = { keep: "Keep", update: "Update SG rules", create: "Create in SG", map: "Map to existing SG" };
+  let entries = [];
+  let destinations = new Map();
+  let revision = 0;
   for (const status of STATUSES) filter.add(new Option(status, status));
 
   function describe(text, error = false) {
@@ -173,93 +169,177 @@ function initialize() {
     message.hidden = !text;
   }
 
-  function visibleEntries() {
-    const search = lower(get("search").value);
-    return entries.filter(entry => (!filter.value || entry.status === filter.value) &&
-      [entry.handle, entry.reference?.title, entry.destination?.title].some(value => lower(value).includes(search)));
+  function destinationFor(entry) {
+    return entry.decision === "map" ? destinations.get(entry.target) : entry.destination;
   }
 
-  function syncSelection() {
-    const eligible = visibleEntries().filter(entry => entry.action);
-    const checked = eligible.filter(entry => selected.has(entry.handle)).length;
-    const toggle = get("select-visible");
-    toggle.disabled = !eligible.length;
-    toggle.checked = Boolean(eligible.length && checked === eligible.length);
-    toggle.indeterminate = checked > 0 && checked < eligible.length;
-    const updates = entries.filter(entry => entry.action === "update" && selected.has(entry.handle)).length;
-    const creates = selected.size - updates;
-    get("updates").disabled = !updates;
-    get("creates").disabled = !creates;
-    get("selection").textContent = updates + " updates · " + creates + " creations selected";
-  }
-
-  function addRules(details, market, collection) {
-    const label = document.createElement("strong");
-    label.textContent = market;
-    const list = document.createElement("ul");
-    list.className = "rule-list";
-    const lines = [...(collection?.sources.values() ?? [])].flatMap(source =>
-      source.rules.map(rule => source.type + " · " + rule.filter(Boolean).join(" · ")));
-    for (const line of lines.length ? lines : [collection ? "No rules in export" : "Collection absent"]) {
-      const item = document.createElement("li");
-      item.textContent = line;
-      list.append(item);
+  function pendingExports() {
+    const updates = entries.filter(entry => entry.decision === "update" ||
+      (entry.decision === "map" && entry.applyMappedRules && destinationFor(entry)));
+    const creates = entries.filter(entry => entry.decision === "create");
+    const counts = new Map();
+    for (const entry of updates) {
+      const id = destinationFor(entry).id;
+      counts.set(id, (counts.get(id) || 0) + 1);
     }
-    details.append(label, list);
+    const conflict = [...counts.values()].some(count => count > 1);
+    return { updates, creates, conflict };
+  }
+
+  function syncDownloads() {
+    const { updates, creates, conflict } = pendingExports();
+    const confirmed = get("confirm").checked;
+    get("updates").disabled = !confirmed || !updates.length || conflict;
+    get("creates").disabled = !confirmed || !creates.length;
+    get("selection").textContent = conflict ? "Two updates target the same SG collection. Keep only one." :
+      updates.length + " updates · " + creates.length + " creations selected";
+  }
+
+  function resetConfirmation() {
+    get("confirm").checked = false;
+    syncDownloads();
+  }
+
+  function element(tag, content) {
+    const node = document.createElement(tag);
+    node.textContent = content;
+    return node;
+  }
+
+  function addRules(container, market, collection) {
+    const side = document.createElement("section");
+    side.append(element("strong", market + " · " + (collection?.title || "No collection selected")));
+    if (collection) {
+      side.append(element("p", collection.handle + " · ID " + collection.id +
+        " · Products in export: " + (collection.metadata["Products Count"] || "—")));
+      if (!collection.sources.size) side.append(element("p", "No exported sources."));
+      for (const source of collection.sources.values()) {
+        side.append(element("p", source.type + " · Source ID " + (source.id || "—")));
+        const list = document.createElement("ul");
+        list.className = "rule-list";
+        for (const rule of source.rules) list.append(element("li", rule.filter(Boolean).join(" · ")));
+        side.append(list);
+      }
+    }
+    container.append(side);
   }
 
   function render() {
+    const search = lower(get("search").value);
     const tbody = get("rows");
     tbody.replaceChildren();
-    for (const entry of visibleEntries()) {
+    for (const entry of entries) {
+      const { handle, reference, destination, status } = entry;
+      if (filter.value && status !== filter.value) continue;
+      if (![handle, reference?.title, destination?.title, destinationFor(entry)?.handle,
+        destinationFor(entry)?.title].some(value => lower(value).includes(search))) continue;
       const row = tbody.insertRow();
-      const checkboxCell = row.insertCell();
-      if (entry.action) {
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = selected.has(entry.handle);
-        checkbox.setAttribute("aria-label", "Select " + entry.handle);
-        checkbox.onchange = () => {
-          if (checkbox.checked) selected.add(entry.handle);
-          else selected.delete(entry.handle);
-          syncSelection();
-        };
-        checkboxCell.append(checkbox);
-      }
-      const collection = row.insertCell();
-      const title = document.createElement("strong");
-      title.textContent = entry.reference?.title || entry.destination?.title || entry.handle;
-      const handle = document.createElement("div");
-      handle.className = "muted";
-      handle.textContent = entry.handle;
-      collection.append(title, handle);
-      const status = document.createElement("span");
-      status.className = "status";
-      status.dataset.status = entry.status;
-      status.textContent = entry.status;
-      row.insertCell().append(status);
+      const identity = row.insertCell();
+      identity.append(element("strong", reference?.title || destination?.title || handle), element("div", handle));
+      const badge = element("span", status);
+      badge.className = "status";
+      badge.dataset.status = status;
+      row.insertCell().append(badge);
+
       const comparison = row.insertCell();
-      comparison.append(entry.note);
       const details = document.createElement("details");
-      const summary = document.createElement("summary");
-      summary.textContent = "View MY and SG rules";
-      details.append(summary);
-      addRules(details, "MY", entry.reference);
-      addRules(details, "SG", entry.destination);
+      details.append(element("summary", "Compare MY and SG"));
       comparison.append(details);
+      const decisionCell = row.insertCell();
+      const decision = document.createElement("select");
+      decision.setAttribute("aria-label", "Decision for " + handle);
+      decision.add(new Option(decisions.keep, "keep"));
+      const blocked = reference ? exportBlock(reference, destination) : "";
+      if (reference && !blocked) {
+        const key = destination ? "update" : "create";
+        decision.add(new Option(decisions[key], key));
+      }
+      if (reference && !destination && destinations.size) decision.add(new Option(decisions.map, "map"));
+      decision.value = entry.decision;
+      decisionCell.append(decision);
+      const controls = document.createElement("div");
+      decisionCell.append(controls);
+
+      function refreshComparison() {
+        const chosen = destinationFor(entry);
+        const pair = document.createElement("div");
+        pair.className = "rule-pair";
+        addRules(pair, "MY", reference);
+        addRules(pair, "SG", chosen);
+        const differences = document.createElement("ul");
+        for (const [key, left, right] of metadataDifferences(reference, chosen)) {
+          differences.append(element("li", key + " · MY: " + (left || "—") + " · SG: " + (right || "—")));
+        }
+        details.replaceChildren(details.firstChild, pair,
+          element("strong", "Collection metadata and metafield differences"),
+          differences.childElementCount ? differences : element("p", "No differences in exported fields."));
+      }
+
+      function renderMapping() {
+        controls.replaceChildren();
+        if (entry.decision !== "map") {
+          if (blocked) controls.append(element("small", blocked));
+          return;
+        }
+        const target = document.createElement("select");
+        target.setAttribute("aria-label", "SG mapping target for " + handle);
+        target.add(new Option("Choose SG collection", ""));
+        for (const [key, collection] of [...destinations].sort(([a], [b]) => a.localeCompare(b))) {
+          target.add(new Option(collection.title + " (" + key + ")", key));
+        }
+        target.value = entry.target;
+        target.onchange = () => {
+          entry.target = target.value;
+          entry.applyMappedRules = false;
+          renderMapping();
+          refreshComparison();
+          details.open = Boolean(entry.target);
+          const replacement = controls.querySelector("select");
+          replacement.focus();
+          resetConfirmation();
+        };
+        controls.append(target);
+        if (!entry.target) return;
+        const reason = exportBlock(reference, destinationFor(entry));
+        if (reason) {
+          controls.append(element("small", reason + " Mapping recorded in the comparison report."));
+        } else {
+          const label = element("label", "Also update the mapped SG rules");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.checked = entry.applyMappedRules;
+          checkbox.onchange = () => {
+            entry.applyMappedRules = checkbox.checked;
+            resetConfirmation();
+          };
+          label.prepend(checkbox);
+          controls.append(label);
+        }
+      }
+
+      decision.onchange = () => {
+        entry.decision = decision.value;
+        entry.applyMappedRules = false;
+        renderMapping();
+        refreshComparison();
+        details.open = decision.value !== "keep";
+        resetConfirmation();
+      };
+      renderMapping();
+      refreshComparison();
     }
     if (!tbody.rows.length) {
       const cell = tbody.insertRow().insertCell();
       cell.colSpan = 4;
       cell.textContent = "No collections match this filter.";
     }
-    syncSelection();
+    syncDownloads();
   }
 
   for (const id of ["my-file", "sg-file"]) {
     get(id).onchange = () => {
       revision++;
-      selected.clear();
+      destinations = new Map();
       entries = [];
       get("results").hidden = true;
       describe("");
@@ -285,11 +365,13 @@ function initialize() {
       const my = readCollections(XLSX.read(myData), "MY");
       const sg = readCollections(XLSX.read(sgData), "SG");
       entries = compareCollections(my, sg);
-      selected.clear();
+      destinations = sg;
+      get("confirm").checked = false;
       get("search").value = "";
       filter.value = "";
       get("counts").textContent = STATUSES.map(status =>
         status + " " + entries.filter(entry => entry.status === status).length).join(" · ");
+      get("counts").prepend(my.size + " MY · " + sg.size + " SG · ");
       get("results").hidden = false;
       describe("");
       render();
@@ -301,16 +383,13 @@ function initialize() {
   };
   get("search").oninput = render;
   filter.onchange = render;
-  get("select-visible").onchange = event => {
-    for (const entry of visibleEntries().filter(entry => entry.action)) {
-      if (event.target.checked) selected.add(entry.handle);
-      else selected.delete(entry.handle);
-    }
-    render();
-  };
+  get("confirm").onchange = syncDownloads;
 
   function download(action) {
-    const chosen = entries.filter(entry => entry.action === action && selected.has(entry.handle));
+    const { updates, creates, conflict } = pendingExports();
+    if (!get("confirm").checked || (action === "update" && conflict)) return;
+    const chosen = (action === "update" ? updates : creates)
+      .map(entry => ({ ...entry, destination: destinationFor(entry) }));
     if (!chosen.length) return;
     const book = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(workbookRows(chosen, action)), "Collections");
@@ -318,6 +397,29 @@ function initialize() {
   }
   get("updates").onclick = () => download("update");
   get("creates").onclick = () => download("create");
+  get("report").onclick = () => {
+    const summary = [["MY Handle", "MY Title", "SG Handle", "SG Title", "SG ID", "Comparison", "Decision", "Export action"]];
+    const rules = [["Review Handle", "Market", "Collection Handle", "Source ID", "Source Type", ...RULE_COLUMNS]];
+    const metadata = [["Review Handle", "Field", "MY", "SG"]];
+    for (const entry of entries) {
+      const { reference, status, decision, handle } = entry;
+      const destination = destinationFor(entry);
+      summary.push([reference?.handle || "", reference?.title || "", destination?.handle || "",
+        destination?.title || "", destination?.id || "", status, decisions[decision],
+        entry.applyMappedRules || decision === "update" ? "UPDATE" : decision === "create" ? "NEW" : ""]);
+      for (const [market, collection] of [["MY", reference], ["SG", destination]]) {
+        for (const source of collection?.sources.values() ?? []) {
+          for (const rule of source.rules) rules.push([handle, market, collection.handle, source.id, source.type, ...rule]);
+        }
+      }
+      for (const difference of metadataDifferences(reference, destination)) metadata.push([handle, ...difference]);
+    }
+    const book = XLSX.utils.book_new();
+    for (const [name, rows] of [["Review decisions", summary], ["Rule details", rules], ["Metadata differences", metadata]]) {
+      XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), name);
+    }
+    XLSX.writeFile(book, "Vans-MY-SG-Collection-Review.xlsx");
+  };
 }
 
 if (typeof document !== "undefined") initialize();
