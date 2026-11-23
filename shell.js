@@ -20,7 +20,7 @@
     dashboard:   { label: "Dashboard",                icon: "home",    href: "index.html",                   desc: "" },
     batches:     { label: "Listing Batches",          icon: "layers",  href: "soon.html?p=batches",          desc: "Track every listing batch from SAP and DAM data to Shopify import." },
     hub:         { label: "Vans Listing Hub",         icon: "grid",    href: "listinghub.html",              desc: "Merge SAP and DAM for Matrixify" },
-    collections: { label: "Vans Smart Collection",    icon: "sparkle", href: "soon.html?p=collections",      desc: "Create collections with conditions set automatically" },
+    collections: { label: "Collection Standardizer",    icon: "sparkle", href: "collections.html",      desc: "Compare MY and SG collection rules and export SG changes" },
     images:      { label: "Vans Image Workbench",     icon: "image",   href: "vans_image.html",           desc: "Find and arrange product images by item code." },
     sku:         { label: "Vans Shopify SKU Mapping", icon: "link",    href: "soon.html?p=sku",              desc: "Map and sync SKUs with eRetail." },
     history:     { label: "Run History",              icon: "history", href: "soon.html?p=history",          desc: "Every run of every tool, in one list." },
