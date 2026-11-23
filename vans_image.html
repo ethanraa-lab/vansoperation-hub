@@ -373,29 +373,60 @@
         flex-wrap: wrap;
       }
     }
+    .workbench {
+      --paper: #f3efe8;
+      --paper-light: #fcfaf5;
+      --paper-line: #ddd4c6;
+      background: var(--paper);
+      padding: clamp(16px, 3vw, 36px);
+    }
+    .workbench .image-heading {
+      padding: 4px 0 22px;
+      margin: 0 0 20px;
+      border-bottom: 1px solid var(--paper-line);
+      align-items: end;
+    }
+    .image-heading h1, .workbench .empty h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+      letter-spacing: -.04em;
+      line-height: 1.05;
+    }
+    .workbench .image-heading h1 { font-size: clamp(32px, 4vw, 58px); }
+    .image-heading-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .workbench .layout { padding: 0; grid-template-columns: minmax(220px, 275px) minmax(0, 1fr); }
+    .workbench .layout > section { min-width: 0; }
+    .workbench .panel { background: var(--paper-light); border-color: var(--paper-line); }
+    .workbench .side { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+    .workbench .upload { background: #eee8dd; border-color: #bfb19d; }
+    .workbench #add, .workbench #searchconfig { background: #252923; border-color: #252923; color: white; }
+    .workbench .notice { background: #ebe4d8; border-color: var(--paper-line); color: #514639; }
+    .workbench .empty { background: linear-gradient(125deg, var(--paper-light), #eee6d8); }
+    .workbench .empty h2 { font-size: clamp(24px, 3vw, 38px); }
+    .workbench .toolbar { flex-wrap: wrap; }
+    .workbench .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 145px), 1fr)); }
+    @media (max-width: 760px), (min-width: 901px) and (max-width: 1040px) {
+      .workbench .layout { grid-template-columns: minmax(0, 1fr); }
+      .workbench .side { position: static; max-height: none; }
+    }
   </style>
 </head>
 <body data-page="images">
   <aside id="side"></aside>
   <main class="workbench">
-  <header class="workbench-header">
-    <strong>VANS</strong><span>IMAGE WORKBENCH</span
-    ><small>PRODUCT OPERATIONS</small
-    ><a href="./index.html" style="color: inherit">Dashboard</a
-    ><button id="logout" style="margin-left: 16px">Log out</button>
-  </header>
-  <div class="top">
-    <div>
-      <h1>From item code to image-ready.</h1>
-      <p>
-        Collect your product views. Put your best image first. Export in one go.
-      </p>
-    </div>
-    <button class="primary" id="export">Export Excel ↗</button>
-  </div>
+    <header class="top image-heading">
+      <div>
+        <h1>Vans Image Workbench</h1>
+        <p>Find product images, choose the hero view, and export to Matrixify.</p>
+      </div>
+      <div class="image-heading-actions">
+        <button id="logout" hidden>Log out</button>
+        <button class="primary" id="export">Export Excel</button>
+      </div>
+    </header>
   <div class="layout">
     <section class="panel side">
-      <div class="eyebrow">01 / ADD PRODUCTS</div>
+      <div class="eyebrow">ADD PRODUCTS</div>
       <h2>Start with your item codes</h2>
       <p class="muted">
         Paste one code per line, or separate with commas. Duplicate codes are
@@ -438,7 +469,7 @@
     </section>
     <section aria-label="Image results">
       <div class="toolbar">
-        <div class="eyebrow" style="margin: 0">02 / CURATE YOUR IMAGES</div>
+        <div class="eyebrow" style="margin: 0">REVIEW IMAGES</div>
         <input
           id="filter"
           placeholder="Filter by item code"
@@ -449,9 +480,7 @@
         Checking image search configuration…
       </div>
       <div class="notice">
-        Search returns candidate images for each code. Review the product and
-        colour, then click Keep to add images to your export. Only your retained
-        images are exported.
+        Review the product and colour before exporting. Drag images or use the arrows to reorder them. The first image is the hero.
       </div>
       <div id="products"></div>
       <section class="panel" id="previewpanel" hidden>
@@ -493,6 +522,6 @@
   </dialog>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="./shell.js?v=file-activity-1"></script>
-  <script src="./public/app.js?v=file-activity-1"></script>
+  <script src="./public/app.js?v=hub-workbench-1"></script>
 </body>
 </html>
