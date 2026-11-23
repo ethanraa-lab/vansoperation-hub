@@ -23,7 +23,7 @@
     collections: { label: "Collection Standardizer",    icon: "sparkle", href: "collections.html",      desc: "Compare MY and SG collection rules and export SG changes" },
     images:      { label: "Vans Image Workbench",     icon: "image",   href: "vans_image.html",           desc: "Find and arrange product images by item code." },
     sku:         { label: "Vans Shopify SKU Mapping", icon: "link",    href: "soon.html?p=sku",              desc: "Map and sync SKUs with eRetail." },
-    history:     { label: "Run History",              icon: "history", href: "soon.html?p=history",          desc: "Every run of every tool, in one list." },
+    history:     { label: "Run History",              icon: "history", href: "soon.html?p=history",          desc: "Review activity recorded by the hub." },
     settings:    { label: "Settings",                 icon: "sliders", href: "soon.html?p=settings",         desc: "Mapping presets, channel codes and naming rules in one place." }
   };
   const GROUPS = [["Workspace", ["dashboard", "batches"]], ["Tools", ["hub", "collections", "images", "sku"]], ["System", ["history", "settings"]]];
@@ -37,13 +37,57 @@
     `</nav><div class="me"><div class="av">EC</div><div><b style="color:#fff;font-weight:600">E-commerce team</b><small>Internal workspace</small></div></div>`;
   document.querySelectorAll("[data-link]").forEach(a => { const p = P[a.dataset.link]; if (p) a.href = p.href; });
 
-  /* run log shared by all pages (stored in this browser) */
+  const historyKey = "ops-activity-v1";
+  const dateFormat = new Intl.DateTimeFormat("en-MY", {
+    timeZone: "Asia/Kuala_Lumpur", dateStyle: "medium", timeStyle: "short"
+  });
+  let storageUnavailable = false;
+
   window.Runs = {
-    demo: [
-      { t: "Nov 12, 2:14 PM", batch: "Vans Malaysia · November Drop", items: 50, status: "Completed", dur: "5 min 41 sec", m: "MY" },
-      { t: "Nov 11, 11:03 AM", batch: "Vans Singapore · Core Restock", items: 36, status: "Completed", dur: "4 min 28 sec", m: "SG" },
-      { t: "Nov 10, 4:27 PM", batch: "Vans Malaysia · Classics Update", items: 48, status: "Completed", dur: "5 min 03 sec", m: "MY" }],
-    get() { try { const s = JSON.parse(localStorage.getItem("ops-runs") || "null"); if (Array.isArray(s) && s.length) return s; } catch (e) {} return this.demo.slice(); },
-    add(r) { const a = this.get(); a.unshift(r); try { localStorage.setItem("ops-runs", JSON.stringify(a.slice(0, 50))); } catch (e) {} }
+    get() {
+      try {
+        const records = JSON.parse(localStorage.getItem(historyKey) || "[]");
+        return Array.isArray(records) ? records.filter(record => record && typeof record.activity === "string") : [];
+      } catch {
+        storageUnavailable = true;
+        return [];
+      }
+    },
+    add(activity, { items, market = "", status = "Completed", started } = {}) {
+      const now = Date.now();
+      const records = this.get();
+      records.unshift({
+        time: now, tool: P[cur]?.label || "Dotcom Operations Hub", activity, items, market, status,
+        seconds: started ? Math.max(0, (now - started) / 1000) : null
+      });
+      try {
+        localStorage.setItem(historyKey, JSON.stringify(records));
+      } catch {
+        storageUnavailable = true;
+      }
+    },
+    render(tbody, { market = "all", limit = Infinity } = {}) {
+      const records = this.get().filter(record => market === "all" ||
+        String(record.market || "").split("/").includes(market)).slice(0, limit);
+      tbody.replaceChildren();
+      for (const record of records) {
+        const row = tbody.insertRow();
+        const seconds = record.seconds;
+        const duration = seconds == null ? "—" : seconds < 1 ? "<1 sec" :
+          seconds < 60 ? Math.round(seconds) + " sec" : Math.floor(seconds / 60) + " min " + Math.floor(seconds % 60) + " sec";
+        const time = Number.isFinite(record.time) ? dateFormat.format(record.time) : "—";
+        for (const value of [time, record.tool, record.activity, record.market || "—",
+          record.items ?? "—", record.status, duration]) {
+          row.insertCell().textContent = value;
+        }
+      }
+      if (!records.length) {
+        const cell = tbody.insertRow().insertCell();
+        cell.colSpan = 7;
+        cell.textContent = storageUnavailable ? "Activity storage is unavailable in this browser." :
+          market === "all" ? "No activity yet. Open a tool to get started." : "No activity for this market yet.";
+      }
+    }
   };
+  if (["hub", "collections", "images", "sku"].includes(cur)) Runs.add("Opened tool");
 })();
