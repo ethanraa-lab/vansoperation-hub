@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dotcom Operations Hub</title>
+  <link rel="stylesheet" href="./shared.css">
+</head>
+<body>
+  <aside id="side"></aside>
+  <main>
+    <header class="top">
+      <div>
+        <h1 id="page-title">Coming soon</h1>
+        <p class="sub" id="page-description"></p>
+      </div>
+    </header>
+    <p class="note">This module is coming soon.</p>
+  </main>
+  <script>
+    const requested = new URLSearchParams(location.search).get("p");
+    if (["batches", "sku", "history", "settings"].includes(requested)) {
+      document.body.dataset.page = requested;
+    }
+  </script>
+  <script src="./shell.js"></script>
+  <script>
+    const page = window.PAGES[document.body.dataset.page];
+    if (page) {
+      document.getElementById("page-title").textContent = page.label;
+      document.getElementById("page-description").textContent = page.desc;
+      document.title = page.label + " · Dotcom Operations Hub";
+    }
+  </script>
+</body>
+</html>
