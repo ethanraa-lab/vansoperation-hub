@@ -1,5 +1,7 @@
 <!doctype html>
 <html lang="en">
+<head>
+  <link rel="stylesheet" href="./shared.css" />
   <meta charset="utf-8" /><meta
     name="viewport"
     content="width=device-width,initial-scale=1"
@@ -12,9 +14,7 @@
       margin: 0;
       background: #f4f4f1;
       color: #202120;
-      font:
-        14px Arial,
-        sans-serif;
+      font: 14px/1.5 var(--sans);
     }
     button,
     input,
@@ -42,7 +42,7 @@
       color: white;
       border-color: #c82929;
     }
-    header {
+    .workbench-header {
       background: #191b1a;
       color: white;
       padding: 20px 32px;
@@ -50,22 +50,23 @@
       align-items: center;
       gap: 18px;
     }
-    header strong {
+    .workbench-header strong {
       font-size: 25px;
       font-style: italic;
       letter-spacing: -1px;
     }
-    header span {
+    .workbench-header span {
       color: #b9bcb8;
       border-left: 1px solid #555;
       padding-left: 18px;
     }
-    header small {
+    .workbench-header small {
       margin-left: auto;
       color: #bbb;
     }
-    .top {
+    .workbench .top {
       padding: 32px 36px 22px;
+      margin-bottom: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -91,6 +92,11 @@
       border: 1px solid #deded7;
       border-radius: 12px;
       padding: 22px;
+    }
+    .workbench {
+      min-width: 0;
+      max-width: none;
+      padding: 0;
     }
     .side {
       align-self: start;
@@ -334,7 +340,7 @@
     .full {
       width: 100%;
     }
-    a {
+    .workbench a {
       color: #9b2424;
     }
     .savehint {
@@ -342,7 +348,7 @@
       color: #aaa;
       margin-top: 16px;
     }
-    @media (max-width: 850px) {
+    @media (max-width: 1100px) {
       .layout {
         grid-template-columns: 1fr;
         padding: 0 16px 20px;
@@ -357,10 +363,10 @@
       .producthead {
         flex-wrap: wrap;
       }
-      header {
+      .workbench-header {
         padding: 18px;
       }
-      header small {
+      .workbench-header small {
         display: none;
       }
       .toolbar {
@@ -368,9 +374,13 @@
       }
     }
   </style>
-  <header>
+</head>
+<body data-page="images">
+  <aside id="side"></aside>
+  <main class="workbench">
+  <header class="workbench-header">
     <strong>VANS</strong><span>IMAGE WORKBENCH</span
-    ><small>PRODUCT OPERATIONS · INDEPENDENT TOOL</small
+    ><small>PRODUCT OPERATIONS</small
     ><a href="./index.html" style="color: inherit">Dashboard</a
     ><button id="logout" style="margin-left: 16px">Log out</button>
   </header>
@@ -384,7 +394,7 @@
     <button class="primary" id="export">Export Excel ↗</button>
   </div>
   <div class="layout">
-    <aside class="panel side">
+    <section class="panel side">
       <div class="eyebrow">01 / ADD PRODUCTS</div>
       <h2>Start with your item codes</h2>
       <p class="muted">
@@ -425,8 +435,8 @@
         between devices.
       </div>
       <div id="status" role="status" class="status"></div>
-    </aside>
-    <main>
+    </section>
+    <section aria-label="Image results">
       <div class="toolbar">
         <div class="eyebrow" style="margin: 0">02 / CURATE YOUR IMAGES</div>
         <input
@@ -451,8 +461,9 @@
         </p>
         <div class="preview" id="rows"></div>
       </section>
-    </main>
+    </section>
   </div>
+  </main>
   <dialog id="mapping">
     <h2>Map your catalog columns</h2>
     <p class="muted">
@@ -481,5 +492,7 @@
     </div>
   </dialog>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="./shell.js"></script>
   <script src="./public/app.js"></script>
+</body>
 </html>
