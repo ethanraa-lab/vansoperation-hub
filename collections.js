@@ -210,11 +210,12 @@ function initialize() {
     const side = document.createElement("section");
     side.append(element("strong", market + " · " + (collection?.title || "No collection selected")));
     if (collection) {
-      side.append(element("p", collection.handle + " · ID " + collection.id +
-        " · Products in export: " + (collection.metadata["Products Count"] || "—")));
-      if (!collection.sources.size) side.append(element("p", "No exported sources."));
+      if (![...collection.sources.values()].some(source => source.rules.length)) {
+        side.append(element("p", "No rules in this export."));
+      }
       for (const source of collection.sources.values()) {
-        side.append(element("p", source.type + " · Source ID " + (source.id || "—")));
+        if (!source.rules.length) continue;
+        side.append(element("p", source.type + (source.title ? " · " + source.title : "")));
         const list = document.createElement("ul");
         list.className = "rule-list";
         for (const rule of source.rules) list.append(element("li", rule.filter(Boolean).join(" · ")));
@@ -243,7 +244,7 @@ function initialize() {
 
       const comparison = row.insertCell();
       const details = document.createElement("details");
-      details.append(element("summary", "Compare MY and SG"));
+      details.append(element("summary", "Compare MY and SG rules"));
       comparison.append(details);
       const decisionCell = row.insertCell();
       const decision = document.createElement("select");
@@ -266,13 +267,7 @@ function initialize() {
         pair.className = "rule-pair";
         addRules(pair, "MY", reference);
         addRules(pair, "SG", chosen);
-        const differences = document.createElement("ul");
-        for (const [key, left, right] of metadataDifferences(reference, chosen)) {
-          differences.append(element("li", key + " · MY: " + (left || "—") + " · SG: " + (right || "—")));
-        }
-        details.replaceChildren(details.firstChild, pair,
-          element("strong", "Collection metadata and metafield differences"),
-          differences.childElementCount ? differences : element("p", "No differences in exported fields."));
+        details.replaceChildren(details.firstChild, pair);
       }
 
       function renderMapping() {
