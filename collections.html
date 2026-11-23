@@ -26,10 +26,14 @@
     th { position: sticky; top: 0; background: var(--canvas); }
     td { overflow-wrap: anywhere; }
     summary { cursor: pointer; color: #263db0; }
+    .rule-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px; }
+    .rule-pair section { background: var(--canvas); border-radius: 8px; padding: 10px; }
+    td select, td label, td small { display: block; margin: 4px 0; }
+    td select { max-width: 220px; }
     .rule-list { margin: 4px 0 10px; padding-left: 18px; }
     .status { display: inline-block; white-space: nowrap; font-weight: 700; border-radius: 20px; padding: 3px 9px; background: var(--canvas); }
-    .status[data-status="Matched"] { background: var(--ok-bg); color: var(--ok); }
-    .status[data-status="Different rules"], .status[data-status="Missing in SG"] { background: var(--accent-soft); color: #263db0; }
+    .status[data-status="Same rules"] { background: var(--ok-bg); color: var(--ok); }
+    .status[data-status="Different rules"], .status[data-status="MY only"] { background: var(--accent-soft); color: #263db0; }
     .status[data-status="Review"] { background: #fff1d6; color: #794900; }
     @media (max-width: 900px) { body { grid-template-columns: minmax(0, 1fr); } }
     @media (max-width: 600px) { .uploads { grid-template-columns: 1fr; } }
@@ -46,7 +50,7 @@
       <a class="btn secondary" href="index.html">Dashboard</a>
     </header>
     <section class="panel" aria-labelledby="upload-title">
-      <h2 id="upload-title">Upload Matrixify exports</h2>
+      <h2 id="upload-title">1. Upload Matrixify exports</h2>
       <p class="muted">Use the current Collections sheet with Sources &amp; Conditions included. Export the same collection scope in both stores so missing handles are meaningful.</p>
       <form id="compare-form">
         <div class="uploads">
@@ -58,22 +62,26 @@
       </form>
     </section>
     <section class="panel" id="results" hidden aria-labelledby="results-title">
-      <h2 id="results-title">Comparison results</h2>
+      <h2 id="results-title">2. Compare and choose what to do</h2>
       <p id="counts" class="muted"></p>
-      <p class="muted">Review the rules before selecting rows. Check metafield values and market-specific conditions against the SG catalog before importing.</p>
+      <p class="muted">Each row starts on Keep. Choose Update SG rules for an existing match or Create in SG for a new handle. If the same collection already exists under a different handle, choose Map to existing SG and select the target. Mapping alone records the link in the comparison report.</p>
       <div class="actions">
         <input id="search" type="search" placeholder="Search title or handle" aria-label="Search title or handle">
-        <select id="filter" aria-label="Filter by status"></select>
+        <select id="filter" aria-label="Filter by status"><option value="">All comparisons</option></select>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th scope="col"><input id="select-visible" type="checkbox" aria-label="Select eligible visible collections"></th><th scope="col">Collection</th><th scope="col">Status</th><th scope="col">Comparison</th></tr></thead>
+          <thead><tr><th scope="col">Collection</th><th scope="col">Comparison</th><th scope="col">Details</th><th scope="col">Your decision</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
+      <h2>3. Download your selections</h2>
+      <p class="muted">Updates replace the selected SG source rules. Creations start unpublished on the Online Store. Review the SG catalog and metafield values before importing.</p>
+      <p><label><input id="confirm" type="checkbox"> I reviewed the selected changes for Vans SG.</label></p>
       <div class="actions">
         <button class="btn" id="updates" type="button" disabled>Download SG updates</button>
         <button class="btn secondary" id="creates" type="button" disabled>Download SG creations</button>
+        <button class="btn secondary" id="report" type="button">Download comparison report</button>
         <span class="muted" id="selection" aria-live="polite"></span>
       </div>
     </section>
