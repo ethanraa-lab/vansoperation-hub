@@ -64,7 +64,8 @@ h2{font-size:19px;font-weight:800;letter-spacing:-.035em;margin:30px 0 12px;disp
 .seg{display:inline-flex;background:#e9ecf6;border-radius:10px;padding:3px}
 .seg button{font:650 12px var(--sans);border:0;background:none;padding:6px 10px;border-radius:7px;color:var(--muted);cursor:pointer}
 .seg button[aria-pressed=true]{background:#fff;color:#293eb0;box-shadow:0 1px 4px #161f491a}
-.tw{overflow-x:auto}
+.tw{overflow:auto}
+#recent-runs-scroll th{position:sticky;top:0;z-index:1}
 table{width:100%;border-collapse:collapse;min-width:610px}
 th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:11px 15px;border-bottom:1px solid var(--line);background:#f8f9fd}
 td{padding:12px 15px;border-bottom:1px solid #eef0f4}
@@ -126,7 +127,7 @@ tbody tr:hover td{background:#f9faff}
       <button aria-pressed="true" data-f="all">All</button><button aria-pressed="false" data-f="MY">Malaysia</button><button aria-pressed="false" data-f="SG">Singapore</button>
     </span>
   </h2>
-  <div class="tw">
+  <div class="tw" id="recent-runs-scroll" tabindex="0" role="region" aria-label="Recent runs">
     <table>
       <thead><tr><th>Time (MYT)</th><th>Tool</th><th>Activity</th><th>File</th><th>Market</th><th>Items</th><th>Status</th><th>Duration</th></tr></thead>
       <tbody id="runs"></tbody>
@@ -138,9 +139,22 @@ tbody tr:hover td{background:#f9faff}
 <script>
 (function () {
   let flt = "all";
-  function render() {
-    Runs.render(document.getElementById("runs"), { market: flt, limit: 10 });
+  const viewport = document.getElementById("recent-runs-scroll");
+  const tbody = document.getElementById("runs");
+  const table = tbody.closest("table");
+  function fitRows() {
+    const fourthRow = tbody.rows[3];
+    viewport.style.maxHeight = fourthRow && tbody.rows.length > 4
+      ? Math.ceil(fourthRow.getBoundingClientRect().bottom - table.getBoundingClientRect().top +
+          viewport.offsetHeight - viewport.clientHeight) + "px"
+      : "";
   }
+  function render() {
+    Runs.render(tbody, { market: flt });
+    viewport.scrollTop = 0;
+    fitRows();
+  }
+  new ResizeObserver(fitRows).observe(table);
   window.addEventListener("pageshow", render);
   window.addEventListener("storage", render);
   const btns = document.querySelectorAll(".seg button");
