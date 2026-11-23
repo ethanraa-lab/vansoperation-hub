@@ -253,7 +253,7 @@ body:has(.detail-dialog[open]){overflow:hidden}
   </div>
   <div class="detail-foot"><span id="detail-status" class="hint" role="status"></span><button type="button" class="btn sm" id="detail-copy">Copy all rows</button></div>
 </dialog>
-<script src="./shell.js"></script>
+<script src="./shell.js?v=file-activity-1"></script>
 <script>
 const HEADERS = ["Handle", "Title", "Body HTML", "Vendor", "Type", "Tags", "Tags Command", "Status", "Published", "Published Scope", "Image Src", "Image Command", "Image Position", "Option1 Name", "Option1 Value", "Option2 Name", "Option2 Value", "Variant Position", "Variant SKU", "Variant Barcodes", "Variant Image", "Variant Price", "Variant Compare At Price", "Variant Taxable", "Variant Inventory Tracker", "Variant Inventory Policy", "Variant Fulfillment Service", "Variant Requires Shipping", "Variant Shipping Profile", "Metafield: custom.plp_gender [single_line_text_field]", "Metafield: custom.seasons [single_line_text_field]", "Metafield: custom.theme [single_line_text_field]", "Metafield: custom.franchise [single_line_text_field]", "Metafield: custom.year [single_line_text_field]", "Metafield: custom.parent_sku [single_line_text_field]", "Metafield: custom.silhouette [single_line_text_field]", "Metafield: custom.color_sku [single_line_text_field]", "Metafield: custom.kids_gender [single_line_text_field]", "Metafield: custom.kids_age_group [single_line_text_field]", "Metafield: custom.mh2 [single_line_text_field]", "Metafield: custom.mh4 [single_line_text_field]", "Metafield: custom.ah1_silloute [single_line_text_field]", "Metafield: custom.ah2_sub_silloutte [single_line_text_field]", "Metafield: custom.masterstyle [single_line_text_field]", "Metafield: custom.product_subtitle [single_line_text_field]", "Metafield: custom.isreturnable [list.single_line_text_field]", "Metafield: custom.iscancellable [list.single_line_text_field]", "Metafield: custom.pdp_details [rich_text_field]"];
 const CLS = ["mh2","mh3","mh4","mh5","ah1","ah2","ah3"];
@@ -360,8 +360,8 @@ const PKEY = "vlh-preset-v1", pm = t => { $("pMsg").textContent = t; };
 function loadMap(a) { if (!Array.isArray(a)) return false; const d = defMap(); a.forEach(x => { const i = HEADERS.indexOf(x.h); if (i > -1) d[i] = { h: x.h, t: x.t, v: x.v }; }); MAP = d; return true; }
 try { const sv = localStorage.getItem(PKEY); if (sv) loadMap(JSON.parse(sv)); } catch (e) {}
 $("pSave").onclick = () => { try { localStorage.setItem(PKEY, JSON.stringify(MAP)); pm("Preset saved in this browser."); window.Runs?.add("Saved listing mapping preset"); } catch (e) { pm("Could not save: browser storage is blocked."); } };
-$("pExp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(MAP, null, 1)], { type: "application/json" })); a.download = "listing-hub-preset.json"; a.click(); };
-$("pImp").onchange = async e => { try { if (loadMap(JSON.parse(await e.target.files[0].text()))) { renderMap(); pm("Preset imported."); window.Runs?.add("Imported listing mapping preset"); } } catch (x) { pm("This is not a valid preset file."); } e.target.value = ""; };
+$("pExp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(MAP, null, 1)], { type: "application/json" })); a.download = "listing-hub-preset.json"; a.click(); window.Runs?.add("Exported listing mapping preset", { file: a.download }); };
+$("pImp").onchange = async e => { try { if (loadMap(JSON.parse(await e.target.files[0].text()))) { renderMap(); pm("Preset imported."); window.Runs?.add("Imported listing mapping preset", { file: e.target.files[0].name }); } } catch (x) { pm("This is not a valid preset file."); } e.target.value = ""; };
 $("pReset").onclick = () => { MAP = defMap(); renderMap(); pm("Reset to default."); window.Runs?.add("Reset listing mapping preset"); };
 
 /* ---- steps ---- */
@@ -442,19 +442,34 @@ $("chD").addEventListener("change", e => { const t = e.target; if (t.dataset.f =
 
 /* ---- load files ---- */
 async function loadSap(f) {
+  const started = Date.now();
+  try {
   const raw = await readSheet(f);
   SAP = raw.map(r => Object.fromEntries(Object.entries(r).map(([k, v]) => [norm(k), String(v).trim()]))); SAPNAME = f.name;
   const have = new Set(Object.keys(SAP[0] || {})), miss = NEED.filter(n => !have.has(n));
-  SAPKEYS = new Set(SAP.map(r => r["old article number"].slice(0, 11).toUpperCase()));
+  SAPKEYS = new Set(SAP.map(r => (r["old article number"] || "").slice(0, 11).toUpperCase()));
   $("eS").innerHTML = miss.length ? `<div class="msg bad">Missing SAP columns: ${esc(miss.join(", "))}</div>` : "";
   OUT = []; detectAll(); refresh();
-  window.Runs?.add("Loaded SAP workbook", { items: raw.length });
+  window.Runs?.add("Imported SAP workbook", { items: raw.length, file: f.name, started,
+    status: miss.length || !raw.length ? "Needs review" : "Completed" });
+  } catch (error) {
+    window.Runs?.add("SAP import failed", { file: f.name, status: "Failed", started });
+    $("eS").textContent = error.message || "Could not read the SAP workbook.";
+  }
 }
 async function addDam(list) {
-  const previousCount = DAMF.length;
-  for (const f of list) { const rows = await readSheet(f); if (rows.length) DAMF.push({ name: f.name, rows, det: null }); }
+  for (const f of list) {
+    const started = Date.now();
+    try {
+      const rows = await readSheet(f);
+      if (rows.length) DAMF.push({ name: f.name, rows, det: null });
+      window.Runs?.add("Imported DAM workbook", { file: f.name, items: rows.length, started,
+        status: rows.length ? "Completed" : "Needs review" });
+    } catch {
+      window.Runs?.add("DAM import failed", { file: f.name, status: "Failed", started });
+    }
+  }
   OUT = []; detectAll(); refresh();
-  if (DAMF.length > previousCount) window.Runs?.add("Loaded DAM workbooks", { items: DAMF.length - previousCount });
 }
 $("fS").onchange = e => { if (e.target.files[0]) loadSap(e.target.files[0]); e.target.value = ""; };
 $("fD").onchange = e => { addDam([...e.target.files]); e.target.value = ""; };
@@ -628,8 +643,9 @@ function run() {
 function download() {
   const ws = XLSX.utils.aoa_to_sheet([HEADERS, ...OUT.map(r => HEADERS.map(h => r[h]))]);
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Products");
-  XLSX.writeFile(wb, `Vans_New_Product_Listing_${new Date().toISOString().slice(0, 10)}.xlsx`);
-  window.Runs?.add("Downloaded Matrixify listing workbook", { items: OUT.length });
+  const file = `Vans_New_Product_Listing_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(wb, file);
+  window.Runs?.add("Downloaded Matrixify listing workbook", { items: OUT.length, file });
 }
 refresh(); goTo(1);
 </script>
