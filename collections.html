@@ -90,6 +90,7 @@
     .export-preview::backdrop { background: #111526aa; }
     .export-preview .table-wrap { max-height: 54vh; border: 1px solid var(--line); border-radius: 8px; }
     .export-preview td { min-width: 105px; max-width: 270px; }
+    .btn.remove { background: #fde8e7; color: #a7231b; }
   </style>
 </head>
 <body data-page="collections">
@@ -131,7 +132,7 @@
     <section class="panel" id="results" hidden aria-labelledby="results-title">
       <h2 id="results-title">2. Compare and choose what to do</h2>
       <p id="counts" class="muted"></p>
-      <p class="muted">Tick the collections you want to export. Existing SG collections go to Updates, and new SG handles go to Creations. Open the rule comparison to review each collection before selecting it.</p>
+      <p class="muted">Tick the collections you want to export. Existing SG collections go to Updates, and new SG handles go to Creations. SG-only collections can be selected for removal. Open the rule comparison to review each collection before selecting it.</p>
       <div class="actions">
         <input id="search" type="search" placeholder="Search title or handle" aria-label="Search title or handle">
         <select id="filter" aria-label="Filter by status"><option value="">All comparisons</option></select>
@@ -147,6 +148,7 @@
       <div class="actions">
         <button class="btn" id="updates" type="button" disabled>Preview SG updates</button>
         <button class="btn secondary" id="creates" type="button" disabled>Preview SG creations</button>
+        <button class="btn remove" id="removes" type="button" disabled>SG Remove</button>
         <button class="btn secondary" id="report" type="button">Download comparison report</button>
         <span class="muted" id="selection" aria-live="polite"></span>
       </div>
@@ -155,6 +157,7 @@
   <dialog class="export-preview" id="export-preview" aria-labelledby="preview-title">
     <h2 id="preview-title">Preview export</h2>
     <p id="preview-description" class="muted"></p>
+    <p id="removal-notice" class="error" hidden>Importing this workbook in Matrixify on SG deletes the selected collections. Check for storefront links and dependencies first.</p>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Excel rows to be exported">
       <table id="preview-rows"></table>
     </div>
@@ -165,6 +168,6 @@
   </dialog>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="shell.js?v=file-activity-1"></script>
-  <script src="collections.js?v=file-activity-1"></script>
+  <script src="collections.js?v=sg-remove-1"></script>
 </body>
 </html>
