@@ -135,6 +135,10 @@ function metadataDifferences(reference, destination) {
 }
 
 function workbookRows(entries, action) {
+  if (action === "remove") {
+    return [["ID", "Handle", "Command"], ...entries.map(({ destination }) =>
+      [destination.id, destination.handle, "DELETE"])];
+  }
   const updating = action === "update";
   const identity = updating
     ? ["ID", "Handle", "Command", SOURCE_ID, "Source: Command", SOURCE_TYPE, "Source: Title", "Source: Description"]
@@ -157,7 +161,7 @@ function initialize() {
   const get = id => document.getElementById(id);
   const message = get("message");
   const filter = get("filter");
-  const decisions = { keep: "Keep", update: "Update SG rules", create: "Create in SG", map: "Map to existing SG" };
+  const decisions = { keep: "Keep", update: "Update SG rules", create: "Create in SG", remove: "Remove from SG", map: "Map to existing SG" };
   let entries = [];
   let destinations = new Map();
   let revision = 0;
@@ -183,15 +187,18 @@ function initialize() {
       counts.set(id, (counts.get(id) || 0) + 1);
     }
     const conflict = [...counts.values()].some(count => count > 1);
-    return { updates, creates, conflict };
+    const removals = entries.filter(entry => entry.decision === "remove");
+    const removalConflict = removals.some(entry => counts.has(entry.destination.id));
+    return { updates, creates, removals, conflict, removalConflict };
   }
 
   function syncDownloads() {
-    const { updates, creates, conflict } = pendingExports();
-    get("updates").disabled = !updates.length || conflict;
+    const { updates, creates, removals, conflict, removalConflict } = pendingExports();
+    get("updates").disabled = !updates.length || conflict || removalConflict;
     get("creates").disabled = !creates.length;
-    get("selection").textContent = conflict ? "Two updates target the same SG collection. Select only one." :
-      updates.length + " updates · " + creates.length + " creations selected";
+    get("removes").disabled = !removals.length || removalConflict;
+    get("selection").textContent = removalConflict ? "An SG collection is selected for both update and removal. Deselect one." : conflict ? "Two updates target the same SG collection. Select only one." :
+      updates.length + " updates · " + creates.length + " creations · " + removals.length + " removals selected";
   }
 
   function element(tag, content) {
@@ -249,12 +256,12 @@ function initialize() {
 
       function updateRow() {
         const chosen = destinationFor(entry);
-        const blocked = reference ? exportBlock(reference, chosen) : "SG-only collection.";
+        const blocked = reference ? exportBlock(reference, chosen) : numericId(destination.id) ? "" : "Valid SG collection ID required.";
         checkbox.disabled = Boolean(blocked);
-        checkbox.checked = ["update", "create"].includes(entry.decision) || entry.applyMappedRules;
-        const action = chosen ? "update" : "create";
+        checkbox.checked = ["update", "create", "remove"].includes(entry.decision) || entry.applyMappedRules;
+        const action = !reference ? "remove" : chosen ? "update" : "create";
         checkbox.setAttribute("aria-label", "Select " + handle + " for SG " + action);
-        note.textContent = blocked || (chosen ? "Tick to update the SG collection." : "Tick to create this MY handle in SG.");
+        note.textContent = blocked || (!reference ? "Tick to include in the SG removal workbook." : chosen ? "Tick to update the SG collection." : "Tick to create this MY handle in SG.");
         if (entry.target && blocked && !exportBlock(reference)) {
           note.textContent += " Choose Create as a separate SG collection below to use the MY handle.";
         }
@@ -269,7 +276,7 @@ function initialize() {
 
       checkbox.onchange = () => {
         if (entry.target) entry.applyMappedRules = checkbox.checked;
-        else entry.decision = checkbox.checked ? (destination ? "update" : "create") : "keep";
+        else entry.decision = checkbox.checked ? (!reference ? "remove" : destination ? "update" : "create") : "keep";
         syncDownloads();
       };
 
@@ -361,17 +368,19 @@ function initialize() {
   get("close-preview").onclick = () => dialog.close();
 
   function preview(action) {
-    const { updates, creates, conflict } = pendingExports();
-    if (action === "update" && conflict) return;
-    const chosen = (action === "update" ? updates : creates)
+    const { updates, creates, removals, conflict, removalConflict } = pendingExports();
+    if ((action === "update" && conflict) || (action !== "create" && removalConflict)) return;
+    const chosen = (action === "update" ? updates : action === "remove" ? removals : creates)
       .map(entry => ({ ...entry, destination: destinationFor(entry) }));
     if (!chosen.length) return;
     const rows = workbookRows(chosen, action);
-    const kind = action === "update" ? "Updates" : "Creations";
+    const kind = action === "update" ? "Updates" : action === "remove" ? "Removals" : "Creations";
     const filename = "Vans-SG-Collections-" + kind + ".xlsx";
     get("preview-title").textContent = "Preview SG " + kind.toLowerCase();
     get("preview-description").textContent = filename + " · " + chosen.length + " collections · " +
       (rows.length - 1) + " data rows";
+    get("removal-notice").hidden = action !== "remove";
+    get("download-preview").textContent = action === "remove" ? "Download removal workbook" : "Download Excel";
     const table = get("preview-rows");
     const head = document.createElement("thead");
     const header = head.insertRow();
@@ -400,6 +409,7 @@ function initialize() {
 
   get("updates").onclick = () => preview("update");
   get("creates").onclick = () => preview("create");
+  get("removes").onclick = () => preview("remove");
   get("report").onclick = () => {
     const summary = [["MY Handle", "MY Title", "SG Handle", "SG Title", "SG ID", "Comparison", "Decision", "Export action"]];
     const rules = [["Review Handle", "Market", "Collection Handle", "Source ID", "Source Type", ...RULE_COLUMNS]];
@@ -409,7 +419,7 @@ function initialize() {
       const destination = destinationFor(entry);
       summary.push([reference?.handle || "", reference?.title || "", destination?.handle || "",
         destination?.title || "", destination?.id || "", status, decisions[decision],
-        entry.applyMappedRules || decision === "update" ? "UPDATE" : decision === "create" ? "NEW" : ""]);
+        entry.applyMappedRules || decision === "update" ? "UPDATE" : decision === "create" ? "NEW" : decision === "remove" ? "DELETE" : ""]);
       for (const [market, collection] of [["MY", reference], ["SG", destination]]) {
         for (const source of collection?.sources.values() ?? []) {
           for (const rule of source.rules) rules.push([handle, market, collection.handle, source.id, source.type, ...rule]);
