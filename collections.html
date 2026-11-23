@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Collection Standardizer · Dotcom Operations Hub</title>
+  <link rel="stylesheet" href="shared.css">
+  <style>
+    body { grid-template-columns: 252px minmax(0, 1fr); }
+    main { min-width: 0; }
+    aside { overflow-y: auto; }
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+    .uploads { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 16px 0; }
+    .upload { display: grid; gap: 8px; padding: 14px; background: var(--canvas); border-radius: 10px; font-weight: 700; }
+    input, select { font: inherit; max-width: 100%; }
+    select, input[type="search"] { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: white; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .secondary { background: var(--accent-soft); color: #263db0; }
+    .btn:disabled { opacity: .55; cursor: default; transform: none; box-shadow: none; }
+    .muted { color: var(--muted); }
+    .error { color: #a7231b; }
+    .table-wrap { overflow: auto; max-height: 65vh; margin: 14px 0; }
+    table { border-collapse: collapse; width: 100%; min-width: 650px; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; background: var(--canvas); }
+    td { overflow-wrap: anywhere; }
+    summary { cursor: pointer; color: #263db0; }
+    .rule-list { margin: 4px 0 10px; padding-left: 18px; }
+    .status { display: inline-block; white-space: nowrap; font-weight: 700; border-radius: 20px; padding: 3px 9px; background: var(--canvas); }
+    .status[data-status="Matched"] { background: var(--ok-bg); color: var(--ok); }
+    .status[data-status="Different rules"], .status[data-status="Missing in SG"] { background: var(--accent-soft); color: #263db0; }
+    .status[data-status="Review"] { background: #fff1d6; color: #794900; }
+    @media (max-width: 900px) { body { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 600px) { .uploads { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-page="collections">
+  <aside id="side"></aside>
+  <main>
+    <header class="top">
+      <div>
+        <h1>Collection Standardizer</h1>
+        <p class="sub">Compare Vans Malaysia collection rules against Vans Singapore.</p>
+      </div>
+      <a class="btn secondary" href="index.html">Dashboard</a>
+    </header>
+    <section class="panel" aria-labelledby="upload-title">
+      <h2 id="upload-title">Upload Matrixify exports</h2>
+      <p class="muted">Use the current Collections sheet with Sources &amp; Conditions included. Export the same collection scope in both stores so missing handles are meaningful.</p>
+      <form id="compare-form">
+        <div class="uploads">
+          <label class="upload">Vans MY · Reference <input id="my-file" type="file" accept=".xlsx" required></label>
+          <label class="upload">Vans SG · Destination <input id="sg-file" type="file" accept=".xlsx" required></label>
+        </div>
+        <button class="btn" id="compare" type="submit">Compare collections</button>
+        <p id="message" role="status" hidden></p>
+      </form>
+    </section>
+    <section class="panel" id="results" hidden aria-labelledby="results-title">
+      <h2 id="results-title">Comparison results</h2>
+      <p id="counts" class="muted"></p>
+      <p class="muted">Review the rules before selecting rows. Check metafield values and market-specific conditions against the SG catalog before importing.</p>
+      <div class="actions">
+        <input id="search" type="search" placeholder="Search title or handle" aria-label="Search title or handle">
+        <select id="filter" aria-label="Filter by status"></select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"><input id="select-visible" type="checkbox" aria-label="Select eligible visible collections"></th><th scope="col">Collection</th><th scope="col">Status</th><th scope="col">Comparison</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="btn" id="updates" type="button" disabled>Download SG updates</button>
+        <button class="btn secondary" id="creates" type="button" disabled>Download SG creations</button>
+        <span class="muted" id="selection" aria-live="polite"></span>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="shell.js"></script>
+  <script src="collections.js"></script>
+</body>
+</html>
