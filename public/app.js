@@ -40,9 +40,45 @@ const officialVansGalleries = new Map([
     "https://assets.vans.com/images/t_img/c_fill%2Cg_center%2Cf_auto%2Ch_573%2Ce_unsharp_mask%3A100%2Cw_458/dpr_2.0/v1740197644/VN000MP6BLK-ALT4/Bail-Shoulder-Bag-VANS-ALT4.png"
   ]]
 ]);
-async function cdnLookup(p){busy++;p.status='Checking Vans image addresses…';render();let code=p.code.replace(/[^A-Z0-9]/g,'');if(!/^VN[A-Z0-9]{6,14}$/.test(code)){p.status='This code does not match a standard Vans style code. Add URLs or search Google Images.'}else{const gallery = officialVansGalleries.get(code);
-if (gallery) await addUrls(p, gallery);
-if (!gallery || !p.images.some(url => gallery.includes(url))) await addUrls(p,['HERO',...Array.from({length:8},(_,i)=>'ALT'+(i+1))].map(v=>'https://images.vans.com/is/image/Vans/'+code+'-'+v+'?wid=1600'));p.status=p.images.length?'Review the product, colour, and image order.':'No images loaded from the checked Vans addresses. Find the item on an official Vans site and add its direct image URLs.'}busy--;render()}$('#add').onclick=async()=>{if(busy)return;let codes=[...new Set($('#codes').value.split(/[\n,;\t]+/).map(s=>s.trim()).filter(Boolean))];if(!codes.length)return say('Paste at least one item code.');$('#codes').value='';for(let code of codes){let p=get(code);await lookup(p)}say(browserOnly ? 'Image checks finished. Review any images found and add missing views as needed.' : 'Search finished. Review candidates under each product; click Keep for the images you want.')};$('#filter').oninput=render;$('#products').onchange=e=>{if(e.target.dataset.handle!==undefined){products[+e.target.dataset.handle].handle=e.target.value.trim();save();window.Runs?.add('Edited a product handle', { items: 1 })}};$('#products').onclick=async e=>{if(busy)return;const b=e.target.closest('[data-action]');if(!b)return;let p=products[+b.dataset.p],i=+b.dataset.i,a=b.dataset.action;if(a==='lookup')return lookup(p);if(a==='cdn')return cdnLookup(p);if(a==='keep'){const r=candidates.get(p.code)?.[i];if(!r)return;busy++;render();if(await check(r.url)){if(!p.images.includes(r.url))p.images.push(r.url);window.Runs?.add('Kept an image', { items: 1 });say('Image kept. Move it first to make it the hero.')}else say('The original image could not load. It was not added to the export.');busy--;render();return}if(a==='dismiss'){candidates.get(p.code)?.splice(i,1);window.Runs?.add('Dismissed an image candidate', { items: 1 });render();return}if(a==='urls'){urlProduct=p;$('#urltext').value='';$('#urls').showModal();return}if(a==='remove')products.splice(+b.dataset.p,1);if(a==='delete')p.images.splice(i,1);if(a==='hero')p.images.unshift(...p.images.splice(i,1));if(a==='left'&&i>0)[p.images[i-1],p.images[i]]=[p.images[i],p.images[i-1]];if(a==='right'&&i<p.images.length-1)[p.images[i+1],p.images[i]]=[p.images[i],p.images[i+1]];
+const vansMalaysiaGalleries = new Map([
+  ["VN000MP6BLK", [
+    "https://vans.com.my/cdn/shop/files/vans_d400305b-1028-4b89-be98-772123b76765.jpg?v=1794278072&width=1600",
+    "https://vans.com.my/cdn/shop/files/vans_5896099e-ebce-46fc-b99f-d5dc9bc815d1.jpg?v=1794278071&width=1600",
+    "https://vans.com.my/cdn/shop/files/vans_148f09a4-08b0-4aa3-b792-db4ea1f86590.jpg?v=1794278071&width=1600",
+    "https://vans.com.my/cdn/shop/files/vans_fd51f51e-7359-489a-9cfc-9e11f746d4a1.jpg?v=1794278071&width=1600",
+    "https://vans.com.my/cdn/shop/files/vans_25aa94e1-c946-448a-8e44-a826361eeb99.jpg?v=1794278072&width=1600",
+    "https://vans.com.my/cdn/shop/files/vans_176c43ad-d0a0-4e6d-bd4e-fa7641a4a61a.jpg?v=1794278072&width=1600"
+  ]]
+]);
+
+async function cdnLookup(product) {
+  busy++;
+  product.status = "Checking Vans image addresses…";
+  render();
+  try {
+    const code = product.code.replace(/[^A-Z0-9]/g, "");
+    if (!/^VN[A-Z0-9]{6,14}$/.test(code)) {
+      product.status = "Enter a Vans style code or add direct image URLs.";
+      return;
+    }
+    const japan = Array.from({length: 6}, (_, i) =>
+      "https://img.vans.com/image/upload/t_Vans-Japan-NormalPDP-1600x2000px/" + code + "-ALT" + (40 + i) + ".jpg");
+    const legacy = ["HERO", ...Array.from({length: 8}, (_, i) => "ALT" + (i + 1))]
+      .map(view => "https://images.vans.com/is/image/Vans/" + code + "-" + view + "?wid=1600");
+    const galleries = [vansMalaysiaGalleries.get(code), officialVansGalleries.get(code), japan, legacy];
+    for (const gallery of galleries) {
+      if (!gallery) continue;
+      await addUrls(product, gallery);
+      if (gallery.some(url => product.images.includes(url))) break;
+    }
+    product.status = product.images.length ? "Review the product, colour, and image order." :
+      "No images loaded from the checked Vans addresses. You can add direct image URLs.";
+  } finally {
+    busy--;
+    render();
+  }
+}
+$('#add').onclick=async()=>{if(busy)return;let codes=[...new Set($('#codes').value.split(/[\n,;\t]+/).map(s=>s.trim()).filter(Boolean))];if(!codes.length)return say('Paste at least one item code.');$('#codes').value='';for(let code of codes){let p=get(code);await lookup(p)}say(browserOnly ? 'Image checks finished. Review any images found and add missing views as needed.' : 'Search finished. Review candidates under each product; click Keep for the images you want.')};$('#filter').oninput=render;$('#products').onchange=e=>{if(e.target.dataset.handle!==undefined){products[+e.target.dataset.handle].handle=e.target.value.trim();save();window.Runs?.add('Edited a product handle', { items: 1 })}};$('#products').onclick=async e=>{if(busy)return;const b=e.target.closest('[data-action]');if(!b)return;let p=products[+b.dataset.p],i=+b.dataset.i,a=b.dataset.action;if(a==='lookup')return lookup(p);if(a==='cdn')return cdnLookup(p);if(a==='keep'){const r=candidates.get(p.code)?.[i];if(!r)return;busy++;render();if(await check(r.url)){if(!p.images.includes(r.url))p.images.push(r.url);window.Runs?.add('Kept an image', { items: 1 });say('Image kept. Move it first to make it the hero.')}else say('The original image could not load. It was not added to the export.');busy--;render();return}if(a==='dismiss'){candidates.get(p.code)?.splice(i,1);window.Runs?.add('Dismissed an image candidate', { items: 1 });render();return}if(a==='urls'){urlProduct=p;$('#urltext').value='';$('#urls').showModal();return}if(a==='remove')products.splice(+b.dataset.p,1);if(a==='delete')p.images.splice(i,1);if(a==='hero')p.images.unshift(...p.images.splice(i,1));if(a==='left'&&i>0)[p.images[i-1],p.images[i]]=[p.images[i],p.images[i-1]];if(a==='right'&&i<p.images.length-1)[p.images[i+1],p.images[i]]=[p.images[i],p.images[i+1]];
 const activity = { remove: 'Removed a product', delete: 'Removed an image', hero: 'Changed the hero image', left: 'Reordered images', right: 'Reordered images' }[a];
 if (activity) window.Runs?.add(activity, { items: 1 });
 render()};let dragged;$('#products').ondragstart=e=>{if(busy){e.preventDefault();return;}let t=e.target.closest('[draggable]');if(t){dragged={p:+t.dataset.p,i:+t.dataset.i};e.dataTransfer.setData('text/plain','image')}};$('#products').ondragover=e=>e.preventDefault();$('#products').ondrop=e=>{if(busy){e.preventDefault();return;}e.preventDefault();let t=e.target.closest('[draggable]');if(t&&dragged&&+t.dataset.p===dragged.p){let p=products[dragged.p];p.images.splice(+t.dataset.i,0,...p.images.splice(dragged.i,1));window.Runs?.add('Reordered images', { items: 1 });render()}dragged=null};$('#cancelurls').onclick=()=>$('#urls').close();$('#saveurls').onclick=async()=>{const p=urlProduct,urls=$('#urltext').value.split(/\s+/).filter(Boolean);$('#urls').close();busy++;render();let before=p.images.length;await addUrls(p,urls);busy--;window.Runs?.add('Checked manual image URLs', { items: p.images.length - before });say((p.images.length-before)+' images added. Invalid, duplicate or blocked URLs were skipped.');render()};function preview(){$('#rows').innerHTML='<table><thead><tr>'+['Handle','Item Code','Image Position','Image Src','Image Alt Text'].map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows().map(r=>'<tr>'+Object.values(r).map(v=>'<td>'+escape(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}$('#preview').onclick=()=>{$('#previewpanel').hidden=!$('#previewpanel').hidden;preview();if(!$('#previewpanel').hidden)window.Runs?.add('Previewed image export', { items: rows().length })};$('#export').onclick=()=>{if(!window.XLSX)return say('Excel library could not load. Please refresh.');if(products.some(p=>p.images.length&&!p.handle.trim()))return say('Every product with images needs a handle.');let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows()),'Products');const file = exportFilename(); XLSX.writeFile(wb,file); window.Runs?.add("Downloaded image workbook", { items: rows().length, file })};let catalogFile = '';
@@ -70,7 +106,7 @@ async function lookup(p){
 async function configurationStatus(){try{const response=await fetch('/api/config');if(response.status===401){location.replace('/login');return;}if(!response.ok)throw Error();configuration=await response.json();$('#searchconfig').textContent=configuration.imageSearchConfigured?'Image search is configured · Brave Search. Item codes are sent to Brave when you start a search.':'Image search needs setup: add BRAVE_SEARCH_API_KEY to your local .env file, then restart. Catalog image URLs, manual URLs and Excel export work without it.';}catch{$('#searchconfig').textContent='Cannot reach the local server. Start the app using npm start, then open http://localhost:3000.';}}
 if(browserOnly){
  $('#logout').hidden = true;
- $('#searchconfig').textContent = 'Checks known Vans gallery and CDN addresses by item code. Regional storefront search is unavailable in this hosted version.';
+ $('#searchconfig').textContent = 'Checks known official Vans galleries and image addresses, including Vans Japan. You can also add direct image URLs.';
 }else {
  $('#logout').hidden = false;
  configurationStatus();
