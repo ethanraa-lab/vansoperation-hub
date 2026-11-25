@@ -31,37 +31,33 @@
   document.body.insertAdjacentHTML("afterbegin", ICONS);
   const side = document.getElementById("side");
   if (side) side.innerHTML =
-    `<a class="brand" href="${P.dashboard.href}" aria-label="Dotcom Operations Hub, go to dashboard"><div class="mark" aria-hidden="true"></div><div><b>Dotcom<br>Operations Hub</b></div></a><nav aria-label="Main">` +
+    `<a class="brand" href="${P.dashboard.href}" aria-label="Dotcom Operations Hub, go to dashboard" title="Dashboard"><div class="mark" aria-hidden="true"></div><div class="sidebar-label"><b>Dotcom<br>Operations Hub</b></div></a><button type="button" id="sidebar-pin" aria-controls="sidebar-nav" aria-pressed="false" aria-label="Keep sidebar expanded" title="Keep sidebar expanded">⇥</button><nav id="sidebar-nav" aria-label="Main">` +
     GROUPS.map(([g, ids], i) => `<div class="grp"${i ? "" : ' style="padding-top:0"'}>${g}</div>` + ids.map(id =>
-      `<a href="${P[id].href}"${id === cur ? ' aria-current="page"' : ""}><svg class="i"><use href="#${P[id].icon}"/></svg>${P[id].label}</a>`).join("")).join("") +
-    `</nav><div class="me"><div class="av">EC</div><div><b style="color:#fff;font-weight:600">E-commerce team</b><small>Internal workspace</small></div></div>`;
-  const workspace = document.querySelector("body > main");
-  if (side && workspace) {
-    const key = "ops-sidebar-collapsed";
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.id = "sidebar-toggle";
-    toggle.setAttribute("aria-controls", side.id);
-    workspace.prepend(toggle);
+      `<a href="${P[id].href}" aria-label="${P[id].label}" title="${P[id].label}"${id === cur ? ' aria-current="page"' : ""}><svg class="i"><use href="#${P[id].icon}"/></svg><span class="sidebar-label">${P[id].label}</span></a>`).join("")).join("") +
+    `</nav><div class="me"><div class="av">EC</div><div class="sidebar-label"><b style="color:#fff;font-weight:600">E-commerce team</b><small>Internal workspace</small></div></div>`;
+  if (side) {
+    const key = "ops-sidebar-pinned";
+    const pin = document.getElementById("sidebar-pin");
 
-    function setCollapsed(collapsed) {
-      side.hidden = collapsed;
-      document.body.classList.toggle("sidebar-collapsed", collapsed);
-      toggle.setAttribute("aria-expanded", String(!collapsed));
-      toggle.textContent = collapsed ? "Show sidebar" : "Hide sidebar";
+    function setPinned(pinned) {
+      document.body.classList.toggle("sidebar-pinned", pinned);
+      pin.setAttribute("aria-pressed", String(pinned));
+      pin.title = pinned ? "Unpin sidebar" : "Keep sidebar expanded";
+      pin.textContent = pinned ? "⇤" : "⇥";
     }
 
-    let collapsed = false;
-    try { collapsed = localStorage.getItem(key) === "1"; } catch {}
-    setCollapsed(collapsed);
-    toggle.addEventListener("click", () => {
-      collapsed = !side.hidden;
-      setCollapsed(collapsed);
-      try { localStorage.setItem(key, collapsed ? "1" : "0"); } catch {}
+    function restorePin() {
+      try { setPinned(localStorage.getItem(key) === "1"); } catch {}
+    }
+
+    document.body.classList.add("sidebar-rail");
+    restorePin();
+    pin.addEventListener("click", () => {
+      const pinned = pin.getAttribute("aria-pressed") !== "true";
+      setPinned(pinned);
+      try { localStorage.setItem(key, pinned ? "1" : "0"); } catch {}
     });
-    window.addEventListener("pageshow", () => {
-      try { setCollapsed(localStorage.getItem(key) === "1"); } catch {}
-    });
+    window.addEventListener("pageshow", restorePin);
   }
 
   document.querySelectorAll("[data-link]").forEach(a => { const p = P[a.dataset.link]; if (p) a.href = p.href; });
