@@ -20,13 +20,14 @@
     dashboard:   { label: "Dashboard",                icon: "home",    href: "index.html",                   desc: "" },
     batches:     { label: "Listing Batches",          icon: "layers",  href: "soon.html?p=batches",          desc: "Track every listing batch from SAP and DAM data to Shopify import." },
     hub:         { label: "Vans Listing Hub",         icon: "grid",    href: "listinghub.html",              desc: "Merge SAP and DAM for Matrixify" },
+    duplicates:  { label: "Matrixify Duplicate Checker", icon: "layers", href: "duplicates.html", desc: "Check Matrixify exports for duplicate records" },
     collections: { label: "Collection Standardizer",    icon: "sparkle", href: "collections.html",      desc: "Compare MY and SG collection rules and export SG changes" },
     images:      { label: "Vans Image Workbench",     icon: "image",   href: "vans_image.html",           desc: "Find and arrange product images by item code." },
     sku:         { label: "Vans Shopify SKU Mapping", icon: "link",    href: "soon.html?p=sku",              desc: "Map and sync SKUs with eRetail." },
     history:     { label: "Run History",              icon: "history", href: "soon.html?p=history",          desc: "Review activity recorded by the hub." },
     settings:    { label: "Settings",                 icon: "sliders", href: "soon.html?p=settings",         desc: "Mapping presets, channel codes and naming rules in one place." }
   };
-  const GROUPS = [["Workspace", ["dashboard", "batches"]], ["Tools", ["hub", "collections", "images", "sku"]], ["System", ["history", "settings"]]];
+  const GROUPS = [["Workspace", ["dashboard", "batches"]], ["Tools", ["hub", "collections", "images", "duplicates", "sku"]], ["System", ["history", "settings"]]];
   const cur = document.body.dataset.page, P = window.PAGES;
   document.body.insertAdjacentHTML("afterbegin", ICONS);
   const side = document.getElementById("side");
