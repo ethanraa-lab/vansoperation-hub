@@ -48,3 +48,31 @@ nav a[aria-current=page]::before{display:none}}
 [hidden]{display:none!important}
 .note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;max-width:560px;color:var(--muted)}
 .note b{color:var(--text)}
+
+/* Workspace layout when the shared navigation is hidden. */
+body.sidebar-collapsed[data-page] { grid-template-columns: minmax(0, 1fr); }
+body.sidebar-collapsed > main { max-width: none; min-width: 0; }
+body.sidebar-collapsed[data-page="hub"] .act { left: 0; }
+
+#sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--text);
+  font: 650 13px/1.4 var(--sans);
+  cursor: pointer;
+}
+#sidebar-toggle::before {
+  content: "";
+  width: 14px;
+  height: 11px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: linear-gradient(to right, currentColor 0 1px, transparent 1px) 4px 0 / 1px 100% no-repeat;
+}
+#sidebar-toggle:hover { background: var(--accent-soft); }
