@@ -49,33 +49,6 @@ nav a[aria-current=page]::before{display:none}}
 .note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;max-width:560px;color:var(--muted)}
 .note b{color:var(--text)}
 
-/* Workspace layout when the shared navigation is hidden. */
-body.sidebar-collapsed[data-page] { grid-template-columns: minmax(0, 1fr); }
-body.sidebar-collapsed > main { max-width: none; min-width: 0; }
-body.sidebar-collapsed[data-page="hub"] .act { left: 0; }
-
-#sidebar-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 14px;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--card);
-  color: var(--text);
-  font: 650 13px/1.4 var(--sans);
-  cursor: pointer;
-}
-#sidebar-toggle::before {
-  content: "";
-  width: 14px;
-  height: 11px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-  background: linear-gradient(to right, currentColor 0 1px, transparent 1px) 4px 0 / 1px 100% no-repeat;
-}
-#sidebar-toggle:hover { background: var(--accent-soft); }
 
 /* Keep navigation available while giving the workspace more room. */
 #sidebar-pin {
@@ -95,12 +68,14 @@ body.sidebar-collapsed[data-page="hub"] .act { left: 0; }
 @media (min-width: 901px) {
   body.sidebar-rail[data-page] {
     --sidebar-width: 64px;
+    --sidebar-label-opacity: 0;
     grid-template-columns: var(--sidebar-width) minmax(0,1fr);
     transition: grid-template-columns .2s ease;
   }
-  body.sidebar-rail.sidebar-pinned,
-  body.sidebar-rail:has(#sidebar-nav :focus-visible),
-  body.sidebar-rail:has(#side .brand:focus-visible) { --sidebar-width: 252px; }
+  body.sidebar-rail[data-page]:is(.sidebar-pinned, :has(#sidebar-nav :focus-visible, #side .brand:focus-visible)) {
+    --sidebar-width: 252px;
+    --sidebar-label-opacity: 1;
+  }
   body.sidebar-rail[data-page="hub"] .act { left: var(--sidebar-width); transition: left .2s ease; }
   body.sidebar-rail > main { min-width: 0; max-width: none; }
   body.sidebar-rail #side { overflow: hidden auto; scrollbar-width: none; }
@@ -110,12 +85,16 @@ body.sidebar-collapsed[data-page="hub"] .act { left: 0; }
   body.sidebar-rail #side nav a { min-height: 42px; padding-inline: 9px; }
   body.sidebar-rail #sidebar-nav .sidebar-label { flex: 0 0 170px; white-space: normal; }
   body.sidebar-rail #side .me { padding-inline: 2px; }
-  body.sidebar-rail:not(.sidebar-pinned):not(:has(#sidebar-nav :focus-visible, #side .brand:focus-visible)) #side :is(.sidebar-label, .grp) { opacity: 0; }
   @media (hover: hover) {
-    body.sidebar-rail:has(#side:hover) { --sidebar-width: 252px; }
-    body.sidebar-rail:not(.sidebar-pinned):has(#side:hover) #side :is(.sidebar-label, .grp) { opacity: 1; }
+    body.sidebar-rail[data-page]:has(#side:hover) {
+      --sidebar-width: 252px;
+      --sidebar-label-opacity: 1;
+    }
   }
-  body.sidebar-rail #side :is(.sidebar-label, .grp) { transition: opacity .15s ease; }
+  body.sidebar-rail #side :is(.sidebar-label, .grp) {
+    opacity: var(--sidebar-label-opacity);
+    transition: opacity .15s ease;
+  }
 }
 @media (max-width: 900px) {
   body.sidebar-rail #side { position: static; height: auto; display: grid; grid-template-columns: 1fr auto; align-items: center; }
