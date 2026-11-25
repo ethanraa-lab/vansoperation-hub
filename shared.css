@@ -76,3 +76,50 @@ body.sidebar-collapsed[data-page="hub"] .act { left: 0; }
   background: linear-gradient(to right, currentColor 0 1px, transparent 1px) 4px 0 / 1px 100% no-repeat;
 }
 #sidebar-toggle:hover { background: var(--accent-soft); }
+
+/* Keep navigation available while giving the workspace more room. */
+#sidebar-pin {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
+  margin: 0 0 12px;
+  border: 1px solid #414758;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font: 18px/1 var(--sans);
+}
+#sidebar-pin:hover, #sidebar-pin[aria-pressed="true"] { background: #292e3b; }
+@media (min-width: 901px) {
+  body.sidebar-rail[data-page] {
+    --sidebar-width: 64px;
+    grid-template-columns: var(--sidebar-width) minmax(0,1fr);
+    transition: grid-template-columns .2s ease;
+  }
+  body.sidebar-rail.sidebar-pinned,
+  body.sidebar-rail:has(#sidebar-nav :focus-visible),
+  body.sidebar-rail:has(#side .brand:focus-visible) { --sidebar-width: 252px; }
+  body.sidebar-rail[data-page="hub"] .act { left: var(--sidebar-width); transition: left .2s ease; }
+  body.sidebar-rail > main { min-width: 0; max-width: none; }
+  body.sidebar-rail #side { overflow: hidden auto; scrollbar-width: none; }
+  body.sidebar-rail #side .brand { padding-inline: 0; }
+  body.sidebar-rail #side .mark, body.sidebar-rail #side .av { flex-shrink: 0; }
+  body.sidebar-rail #side .sidebar-label, body.sidebar-rail #side .grp { white-space: nowrap; }
+  body.sidebar-rail #side nav a { min-height: 42px; padding-inline: 9px; }
+  body.sidebar-rail #sidebar-nav .sidebar-label { flex: 0 0 170px; white-space: normal; }
+  body.sidebar-rail #side .me { padding-inline: 2px; }
+  body.sidebar-rail:not(.sidebar-pinned):not(:has(#sidebar-nav :focus-visible, #side .brand:focus-visible)) #side :is(.sidebar-label, .grp) { opacity: 0; }
+  @media (hover: hover) {
+    body.sidebar-rail:has(#side:hover) { --sidebar-width: 252px; }
+    body.sidebar-rail:not(.sidebar-pinned):has(#side:hover) #side :is(.sidebar-label, .grp) { opacity: 1; }
+  }
+  body.sidebar-rail #side :is(.sidebar-label, .grp) { transition: opacity .15s ease; }
+}
+@media (max-width: 900px) {
+  body.sidebar-rail #side { position: static; height: auto; display: grid; grid-template-columns: 1fr auto; align-items: center; }
+  body.sidebar-rail #side .brand, body.sidebar-rail #sidebar-pin { margin: 0; padding-bottom: 0; }
+  body.sidebar-rail #sidebar-nav { grid-column: 1 / -1; margin-top: 10px; }
+  body.sidebar-rail:not(.sidebar-pinned) #sidebar-nav { display: none; }
+}
