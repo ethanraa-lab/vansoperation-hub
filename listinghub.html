@@ -113,6 +113,8 @@ main{width:100%;max-width:1440px;margin:0 auto}
 .st.done span{background:var(--ok);color:#fff}
 .act{left:252px}
 .actin{max-width:1440px}
+body[data-page="hub"].sidebar-rail:not(.sidebar-pinned) > main,
+body[data-page="hub"].sidebar-rail:not(.sidebar-pinned) .actin{max-width:none}
 .preview-scroll{max-width:100%;max-height:min(55vh,520px);overflow:auto;scrollbar-gutter:stable}
 .preview-scroll table{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0}
 .preview-scroll th,.preview-scroll td{vertical-align:top;min-width:130px;max-width:320px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -203,7 +205,6 @@ body:has(.detail-dialog[open]){overflow:hidden}
 <main>
 <div class="hub-title">
   <div><span class="hint"><a href="index.html">Dashboard</a> / Vans Listing Hub</span><h1>Vans Listing Hub</h1><p>Merge SAP and DAM data into the Matrixify product import template.</p></div>
-  <a class="btn gh" href="index.html">← Dashboard</a>
 </div>
 <nav class="steps" id="stp" aria-label="Steps"></nav>
 <section class="pane" id="s1">
