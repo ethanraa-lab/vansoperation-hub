@@ -35,6 +35,35 @@
     GROUPS.map(([g, ids], i) => `<div class="grp"${i ? "" : ' style="padding-top:0"'}>${g}</div>` + ids.map(id =>
       `<a href="${P[id].href}"${id === cur ? ' aria-current="page"' : ""}><svg class="i"><use href="#${P[id].icon}"/></svg>${P[id].label}</a>`).join("")).join("") +
     `</nav><div class="me"><div class="av">EC</div><div><b style="color:#fff;font-weight:600">E-commerce team</b><small>Internal workspace</small></div></div>`;
+  const workspace = document.querySelector("body > main");
+  if (side && workspace) {
+    const key = "ops-sidebar-collapsed";
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.id = "sidebar-toggle";
+    toggle.setAttribute("aria-controls", side.id);
+    workspace.prepend(toggle);
+
+    function setCollapsed(collapsed) {
+      side.hidden = collapsed;
+      document.body.classList.toggle("sidebar-collapsed", collapsed);
+      toggle.setAttribute("aria-expanded", String(!collapsed));
+      toggle.textContent = collapsed ? "Show sidebar" : "Hide sidebar";
+    }
+
+    let collapsed = false;
+    try { collapsed = localStorage.getItem(key) === "1"; } catch {}
+    setCollapsed(collapsed);
+    toggle.addEventListener("click", () => {
+      collapsed = !side.hidden;
+      setCollapsed(collapsed);
+      try { localStorage.setItem(key, collapsed ? "1" : "0"); } catch {}
+    });
+    window.addEventListener("pageshow", () => {
+      try { setCollapsed(localStorage.getItem(key) === "1"); } catch {}
+    });
+  }
+
   document.querySelectorAll("[data-link]").forEach(a => { const p = P[a.dataset.link]; if (p) a.href = p.href; });
 
   const historyKey = "ops-activity-v1";
